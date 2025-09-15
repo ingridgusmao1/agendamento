@@ -48,3 +48,9 @@ Thumbs.db
 *.mov
 *.wmv
 
+# Arquivos de ambiente
+.env
+.env.*
+
+# Dependências do Composer
+/vendor/
