@@ -25,7 +25,7 @@ return new class extends Migration
         $t->decimal('gps_lat',10,7)->nullable();
         $t->decimal('gps_lng',10,7)->nullable();
         $t->text('collection_note')->nullable();            // observação de cobrança
-        $t->enum('status',['open','closed','overdue'])->default('open');
+        $t->enum('status',['aberto','fechado','atrasado'])->default('aberto');
         $t->timestamps();
         });
     }

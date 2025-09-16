@@ -69,7 +69,7 @@ class SaleSeeder extends Seeder
                     'gps_lat'           => null,
                     'gps_lng'           => null,
                     'collection_note'   => $obs[$n % count($obs)],
-                    'status'            => 'open',
+                    'status'            => 'aberto',
                 ]);
 
                 foreach ($itens as $i) {
@@ -92,17 +92,17 @@ class SaleSeeder extends Seeder
                 foreach ($sale->installments as $ins) {
                     PaymentService::pay($ins, $ins->amount, $collectors[ ($n-1) % count($collectors) ], 'Quitação programada');
                 }
-                $sale->status = 'closed';
+                $sale->status = 'fechado';
                 $sale->save();
             } elseif ($n % 5 == 0 && $n % 10 != 0) {
                 // pagar parcialmente 1 parcela
                 $ins = $sale->installments->first();
                 PaymentService::pay($ins, round($ins->amount * 0.4, 2), $collectors[ ($n-1) % count($collectors) ], 'Pagamento parcial');
-                // status da venda permanece 'open'
+                // status da venda permanece 'aberto'
             } elseif ($n % 7 == 0) {
                 // nenhum pagamento: “atrasado” se já passou a primeira
-                // (ajuste simples: marca a venda como overdue)
-                $sale->status = 'overdue';
+                // (ajuste simples: marca a venda como atrasado)
+                $sale->status = 'atrasado';
                 $sale->save();
             }
         }
