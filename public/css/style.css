@@ -1,0 +1,276 @@
+/* ===== Paleta ===== */
+:root{
+  --pm-primary:        #F44336; /* vermelho principal */
+  --pm-primary-dark:   #D32F2F; /* vermelho escuro */
+  --pm-primary-light:  #FFCDD2; /* vermelho claro */
+  --pm-white:          #FFFFFF;
+  --pm-black:          #212121;
+  --pm-gray-700:       #424242; /* cinza escuro */
+  --pm-gray-600:       #757575; /* texto secundário */
+  --pm-gray-500:       #9E9E9E; /* acento */
+  --pm-divider:        #BDBDBD; /* divisores/bordas leves */
+}
+
+/* ===== Reset suave para tipografia ===== */
+body{
+  color: var(--pm-black);
+}
+.pm-text-muted{ color: var(--pm-gray-600)!important; }
+.pm-text-primary{ color: var(--pm-primary)!important; }
+.pm-text-danger{ color: var(--pm-primary-dark)!important; }
+.pm-link{ color: var(--pm-primary); text-decoration: none; }
+.pm-link:hover{ color: var(--pm-primary-dark); text-decoration: underline; }
+
+/* ===== Botões ===== */
+.pm-btn{
+  --_bg: var(--pm-primary);
+  --_bd: var(--pm-primary);
+  --_fg: var(--pm-white);
+  --_bg-hover: color-mix(in srgb, var(--pm-primary) 90%, black);
+  --_bd-hover: var(--pm-primary-dark);
+  --_fg-hover: var(--pm-white);
+  border: 1px solid var(--_bd);
+  background: var(--_bg);
+  color: var(--_fg);
+  padding: .55rem 1rem;
+  border-radius: .5rem;
+  font-weight: 600;
+  line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  transition: background .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
+}
+.pm-btn:hover{ background: var(--_bg-hover); border-color: var(--_bd-hover); color: var(--_fg-hover); }
+.pm-btn:focus-visible{ outline: none; box-shadow: 0 0 0 .25rem color-mix(in srgb, var(--pm-primary) 25%, transparent); }
+
+/* variantes */
+.pm-btn-primary{ /* default (vermelho principal) */ }
+
+/* EDITAR em cinza-escuro (não vermelho) */
+.pm-btn-dark{
+  --_bg: var(--pm-gray-700);
+  --_bd: var(--pm-gray-700);
+  --_fg: var(--pm-white);
+  --_bg-hover: color-mix(in srgb, var(--pm-gray-700) 90%, black);
+}
+
+/* claro (vermelho claro) */
+.pm-btn-light{
+  --_bg: var(--pm-primary-light);
+  --_bd: var(--pm-primary-light);
+  --_fg: var(--pm-black);
+  --_bg-hover: color-mix(in srgb, var(--pm-primary-light) 85%, var(--pm-primary));
+  --_bd-hover: var(--pm-primary);
+}
+
+/* outline genérico (usa vermelho principal) */
+.pm-btn-outline{
+  --_bg: transparent;
+  --_bd: var(--pm-primary);
+  --_fg: var(--pm-primary);
+  --_bg-hover: var(--pm-primary);
+  --_fg-hover: var(--pm-white);
+}
+
+/* outline cinza (secundário) */
+.pm-btn-outline-secondary{
+  --_bg: transparent;
+  --_bd: var(--pm-gray-700);
+  --_fg: var(--pm-gray-700);
+  --_bg-hover: color-mix(in srgb, var(--pm-gray-700) 10%, transparent);
+  --_fg-hover: var(--pm-gray-700);
+}
+
+/* outline vermelho específico (EXCLUIR) */
+.pm-btn-outline-danger{
+  --_bg: transparent;
+  --_bd: var(--pm-primary);
+  --_fg: var(--pm-primary);
+}
+.pm-btn-outline-danger:hover{
+  background: var(--pm-primary-light);
+  border-color: var(--pm-primary-dark);
+  color: var(--pm-primary-dark);
+}
+
+/* ghost (texto vermelho, fundo transparente) */
+.pm-btn-ghost{
+  --_bg: transparent;
+  --_bd: transparent;
+  --_fg: var(--pm-primary);
+  --_bg-hover: color-mix(in srgb, var(--pm-primary) 12%, transparent);
+  --_bd-hover: transparent;
+}
+
+/* Botões pequenos/grandes */
+.pm-btn-sm{ padding: .35rem .7rem; font-weight: 600; border-radius: .4rem; }
+.pm-btn-lg{ padding: .8rem 1.25rem; font-size: 1.05rem; }
+
+/* Ícones alinhados */
+.pm-btn > .pm-icon{
+  width: 1.1em; height: 1.1em; display: inline-block;
+}
+
+/* ===== Cards / painéis ===== */
+.pm-card{
+  background: var(--pm-white);
+  border: 1px solid var(--pm-divider);
+  border-radius: .75rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,.04);
+}
+.pm-card-header{
+  padding: .85rem 1rem;
+  border-bottom: 1px solid var(--pm-divider);
+  font-weight: 700;
+  color: var(--pm-black);
+}
+.pm-card-body{ padding: 1rem; }
+.pm-card-footer{
+  padding: .75rem 1rem;
+  border-top: 1px solid var(--pm-divider);
+  background: #fafafa;
+}
+
+/* ===== Badges ===== */
+.pm-badge{
+  display: inline-block;
+  font-weight: 700;
+  padding: .25rem .5rem;
+  border-radius: 999px;
+  font-size: .75rem;
+  letter-spacing: .2px;
+}
+.pm-badge-primary{ background: var(--pm-primary); color: var(--pm-white); }
+.pm-badge-light{ background: var(--pm-primary-light); color: var(--pm-black); }
+.pm-badge-outline{ color: var(--pm-primary); border: 1px solid var(--pm-primary); background: transparent; }
+
+/* ===== Tabelas ===== */
+.pm-table{
+  --_head-bg: color-mix(in srgb, var(--pm-primary-light) 65%, white);
+  --_head-fg: var(--pm-black);
+  border: 1px solid var(--pm-divider);
+  border-radius: .5rem;
+  overflow: hidden;
+}
+.pm-table table{ width: 100%; margin: 0; border-collapse: collapse; }
+.pm-table thead th{
+  background: var(--_head-bg);
+  color: var(--_head-fg);
+  font-weight: 700;
+  padding: .75rem .75rem;
+  border-bottom: 1px solid var(--pm-divider);
+}
+.pm-table tbody td{
+  padding: .7rem .75rem;
+  border-bottom: 1px solid var(--pm-divider);
+}
+.pm-table tr:last-child td{ border-bottom: 0; }
+.pm-table .pm-cell-actions{ text-align: right; white-space: nowrap; }
+
+/* Listrada */
+.pm-table-striped tbody tr:nth-child(odd){
+  background: color-mix(in srgb, var(--pm-primary-light) 20%, white);
+}
+
+/* Hover */
+.pm-table-hover tbody tr:hover{
+  background: color-mix(in srgb, var(--pm-primary-light) 35%, white);
+}
+
+/* ===== Formulários ===== */
+.pm-form .form-label{ font-weight: 600; color: var(--pm-black); }
+.pm-input, .pm-select, .pm-textarea{
+  border: 1px solid var(--pm-divider);
+  border-radius: .5rem;
+  padding: .55rem .7rem;
+  outline: none;
+}
+.pm-input:focus, .pm-select:focus, .pm-textarea:focus{
+  border-color: var(--pm-primary);
+  box-shadow: 0 0 0 .2rem color-mix(in srgb, var(--pm-primary) 25%, transparent);
+}
+.pm-help{ color: var(--pm-gray-600); font-size: .875rem; }
+
+/* Checkbox/Radio vermelho */
+.pm-check .form-check-input:checked{
+  background-color: var(--pm-primary);
+  border-color: var(--pm-primary);
+}
+
+/* ===== Alertas ===== */
+.pm-alert{
+  border: 1px solid var(--pm-divider);
+  border-left: .4rem solid var(--pm-primary);
+  background: color-mix(in srgb, var(--pm-primary-light) 40%, white);
+  color: var(--pm-black);
+  padding: .9rem 1rem;
+  border-radius: .5rem;
+}
+.pm-alert-success{
+  border-left-color: var(--pm-primary-dark);
+  background: color-mix(in srgb, var(--pm-primary) 12%, white);
+}
+
+/* ===== Navbar ===== */
+.pm-navbar{
+  background: var(--pm-primary-dark);
+  color: var(--pm-white);
+}
+.pm-navbar a{ color: var(--pm-white); }
+.pm-navbar .pm-navbar-brand{ font-weight: 700; }
+
+/* ===== Divisores / bordas ===== */
+.pm-divider{ border-top: 1px solid var(--pm-divider); margin: 1rem 0; }
+
+/* ===== Utilitários de cor de fundo ===== */
+.pm-bg-primary{ background: var(--pm-primary)!important; color: var(--pm-white)!important; }
+.pm-bg-primary-dark{ background: var(--pm-primary-dark)!important; color: var(--pm-white)!important; }
+.pm-bg-primary-light{ background: var(--pm-primary-light)!important; color: var(--pm-black)!important; }
+
+/* ===== Títulos de seção ===== */
+.pm-section-title{
+  font-weight: 800;
+  margin: .25rem 0 .75rem;
+  color: var(--pm-black);
+  border-left: .35rem solid var(--pm-primary);
+  padding-left: .5rem;
+}
+
+/* ===== Botões de ação da lista (ícones redondos) ===== */
+.pm-action{
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 1px solid var(--pm-divider);
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--pm-primary);
+  background: var(--pm-white);
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.pm-action:hover{
+  background: var(--pm-primary-light);
+  border-color: var(--pm-primary);
+  color: var(--pm-primary-dark);
+}
+
+/* ===== Rodapé de listagem ===== */
+.pm-list-footer{
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .75rem; border: 1px solid var(--pm-divider); border-top: 0;
+  border-radius: 0 0 .5rem .5rem; background: #fafafa;
+}
+
+/* ===== Tabelas “vazias” ===== */
+.pm-empty{
+  padding: 2rem; text-align: center; color: var(--pm-gray-600);
+  border: 1px dashed var(--pm-divider); border-radius: .5rem;
+}
+
+/* ===== Paginação (Bootstrap override leve via seletor específico) ===== */
+.pm-pagination .page-link{
+  color: var(--pm-primary);
+}
+.pm-pagination .page-item.active .page-link{
+  background: var(--pm-primary);
+  border-color: var(--pm-primary);
+  color: var(--pm-white);
+}
