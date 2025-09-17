@@ -7,7 +7,7 @@ use App\Http\Controllers\Admin\UserAdminController;
 
 Route::get('/', fn() => redirect()->route('admin.dashboard'));
 
-// Login web por CÓDIGO + senha
+// Login web por código + senha
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthWebController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthWebController::class, 'doLogin'])->name('login.post');
@@ -26,11 +26,14 @@ Route::prefix('admin')->middleware(['auth','ensure.usertype:admin'])->name('admi
 
     // Produtos
     Route::get('/products', [ProductAdminController::class, 'index'])->name('products.index');
-    Route::get('/products/create', [ProductAdminController::class, 'create'])->name('products.create');
     Route::post('/products', [ProductAdminController::class, 'store'])->name('products.store');
-    Route::get('/products/{product}/edit', [ProductAdminController::class, 'edit'])->name('products.edit');
     Route::put('/products/{product}', [ProductAdminController::class, 'update'])->name('products.update');
     Route::delete('/products/{product}', [ProductAdminController::class, 'destroy'])->name('products.destroy');
+
+    // Paginação de produtos
+    Route::get('/products/fetch', [ProductAdminController::class, 'fetch'])->name('products.fetch');
+
+    //------------------------------------------------------------------------------------------------------------------------
 
     // Usuários
     Route::get('/users', [UserAdminController::class, 'index'])->name('users.index');
@@ -38,4 +41,7 @@ Route::prefix('admin')->middleware(['auth','ensure.usertype:admin'])->name('admi
     Route::put('/users/{user}', [UserAdminController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [UserAdminController::class, 'destroy'])->name('users.destroy');
     Route::post('/users/{user}/reset-password', [UserAdminController::class, 'resetPassword'])->name('users.resetPassword');
+
+    // Paginação de usuários
+    Route::get('/users/fetch', [UserAdminController::class, 'fetch'])->name('users.fetch');
 });

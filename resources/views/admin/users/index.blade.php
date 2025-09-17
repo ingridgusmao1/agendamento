@@ -1,12 +1,12 @@
 @extends('layouts.admin')
-@section('title',__('global.users'))
+@section('title', __('global.users'))
 
 @section('content')
 <div class="d-flex mb-3">
-  <form class="d-flex pm-form" method="GET">
-    <input type="text" name="q" value="{{ $q }}" class="form-control pm-input me-2" placeholder="Buscar por nome ou código">
-    <button class="btn pm-btn pm-btn-outline-secondary">Buscar</button>
-  </form>
+  <div class="d-flex pm-form flex-grow-1">
+    <input type="text" name="q" value="{{ $q ?? '' }}" class="form-control pm-input me-2"
+           placeholder="{{ __('global.search_by_name_or_code') }}" autocomplete="off" />
+  </div>
   <button class="btn pm-btn pm-btn-primary ms-auto" data-bs-toggle="modal" data-bs-target="#modalCreate">
     <i class="bi bi-plus-lg"></i> {{ __('global.new') }}
   </button>
@@ -23,49 +23,22 @@
           <th class="text-end">{{ __('global.actions') }}</th>
         </tr>
       </thead>
-      <tbody>
-      @forelse($items as $u)
-        <tr>
-          <td>{{ $u->code }}</td>
-          <td>{{ $u->name }}</td>
-          <td>{{ $u->type }}</td>
-          <td class="text-end">
-            <button
-              class="btn btn-sm pm-btn pm-btn-dark btn-edit"
-              data-id="{{ $u->id }}" data-name="{{ $u->name }}" data-type="{{ $u->type }}"
-              data-bs-toggle="tooltip" title="{{ __('global.edit') }}">
-              <i class="bi bi-pencil"></i>
-            </button>
-
-            <button
-              class="btn btn-sm pm-btn pm-btn-outline-danger btn-reset"
-              data-id="{{ $u->id }}"
-              data-bs-toggle="tooltip" title="{{ __('global.reset_password') }}">
-              <i class="bi bi-key"></i>
-            </button>
-
-            @if($u->type != 'admin')
-            <form method="POST" action="{{ route('admin.users.destroy',$u) }}" class="d-inline delete-form">
-              @csrf @method('DELETE')
-              <button
-                class="btn btn-sm pm-btn pm-btn-primary"
-                data-bs-toggle="tooltip" title="{{ __('global.delete') }}">
-                <i class="bi bi-trash"></i>
-              </button>
-            </form>
-            @endif
-          </td>
-        </tr>
-      @empty
-        <tr>
-          <td colspan="4" class="text-muted pm-text-muted">{{ __('global.no_user') }}</td>
-        </tr>
-      @endforelse
+      <tbody id="users-tbody">
+        {{-- carregado via AJAX --}}
       </tbody>
     </table>
   </div>
-  <div class="card-footer pm-card-footer">
-    {{ $items->links() }}
+
+  <div class="pm-card-footer d-flex align-items-center justify-content-between px-3 py-2">
+    <div id="users-range" class="text-muted small"><!-- 1–4 / 0 --></div>
+    <div>
+      <button id="btnPrev" class="btn pm-btn pm-btn-outline-secondary btn-sm me-2" disabled>
+        &larr; {{ __('global.prev') }}
+      </button>
+      <button id="btnNext" class="btn pm-btn pm-btn-outline-secondary btn-sm" disabled>
+        {{ __('global.next') }} &rarr;
+      </button>
+    </div>
   </div>
 </div>
 
@@ -95,7 +68,7 @@
         </div>
         <div class="mb-2">
           <label class="form-label">{{ __('global.password') }}</label>
-          <input type="password" name="password" class="form-control pm-input" required>
+          <input type="password" name="password" class="form-control pm-input" required minlength="4">
         </div>
       </div>
       <div class="modal-footer">
@@ -122,7 +95,9 @@
         <div class="mb-2">
           <label class="form-label">{{ __('global.type') }}</label>
           <select name="type" id="editType" class="form-select pm-select" required>
-            @foreach($types as $t) <option value="{{ $t }}">{{ $t }}</option> @endforeach
+            @foreach($types as $t)
+              <option value="{{ $t }}">{{ $t }}</option>
+            @endforeach
           </select>
         </div>
       </div>
@@ -145,7 +120,7 @@
       <div class="modal-body">
         <div class="mb-2">
           <label class="form-label">{{ __('global.new_password') }}</label>
-          <input type="password" name="password" class="form-control pm-input" required>
+          <input type="password" name="password" class="form-control pm-input" required minlength="4">
         </div>
       </div>
       <div class="modal-footer">
@@ -158,38 +133,93 @@
 
 @push('scripts')
 <script>
-  // Confirmação de exclusão
-  document.querySelectorAll('.delete-form').forEach(f => {
-    f.addEventListener('submit', (e) => {
-      if (!confirm(@json(__('global.delete_this_user')))) {
-        e.preventDefault();
-      }
+(function(){
+  let page = 1;
+  const $q        = document.querySelector('input[name="q"]');
+  const $tbody    = document.getElementById('users-tbody');
+  const $btnPrev  = document.getElementById('btnPrev');
+  const $btnNext  = document.getElementById('btnNext');
+  const $range    = document.getElementById('users-range');
+  const urlFetch  = @json(route('admin.users.fetch'));
+  const confirmDeleteMsg = @json(__('global.delete_this_user'));
+
+  function initTooltips(){
+    document.querySelectorAll('[data-bs-toggle="tooltip"]')
+      .forEach(el => new bootstrap.Tooltip(el));
+  }
+
+  function wireDeleteConfirm(){
+    document.querySelectorAll('.delete-form').forEach(f => {
+      f.addEventListener('submit', (e) => {
+        if (!confirm(confirmDeleteMsg)) e.preventDefault();
+      });
     });
+  }
+
+  function updateRange(meta){
+    const start = meta.total === 0 ? 0 : ((meta.page - 1) * meta.perPage + 1);
+    const end   = Math.min(meta.page * meta.perPage, meta.total);
+    $range.textContent = `${start}–${end} / ${meta.total}`;
+  }
+
+  function load(){
+    const params = new URLSearchParams({ q: $q.value || '', page: String(page) });
+    fetch(`${urlFetch}?${params.toString()}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(r => r.json())
+      .then(meta => {
+        $tbody.innerHTML  = meta.html;
+        $btnPrev.disabled = !meta.hasPrev;
+        $btnNext.disabled = !meta.hasNext;
+        updateRange(meta);
+        initTooltips();
+        wireDeleteConfirm();
+      })
+      .catch(console.error);
+  }
+
+  // paginação
+  $btnPrev?.addEventListener('click', function(){ if (page > 1){ page--; load(); } });
+  $btnNext?.addEventListener('click', function(){ page++; load(); });
+
+  // busca dinâmica
+  let t;
+  $q?.addEventListener('input', function(){
+    page = 1;
+    clearTimeout(t);
+    t = setTimeout(load, 300);
   });
 
-  // Abrir modal de edição
-  document.querySelectorAll('.btn-edit').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id   = btn.getAttribute('data-id');
-      const name = btn.getAttribute('data-name');
-      const type = btn.getAttribute('data-type');
+  // abrir modais (sem lógica de senha no Edit)
+  const $modalEdit = document.getElementById('modalEdit');
+  const $formEdit  = document.getElementById('formEdit');
+  const $editType  = document.getElementById('editType');
+
+  document.addEventListener('click', function(e){
+    const btnEdit  = e.target.closest('.btn-edit');
+    const btnReset = e.target.closest('.btn-reset');
+
+    if (btnEdit) {
+      const id   = btnEdit.getAttribute('data-id');
+      const name = btnEdit.getAttribute('data-name');
+      const type = btnEdit.getAttribute('data-type');
+
       document.getElementById('editName').value = name;
-      document.getElementById('editType').value = type;
-      document.getElementById('formEdit').setAttribute('action', '/admin/users/'+id);
-      new bootstrap.Modal(document.getElementById('modalEdit')).show();
-    });
-  });
+      if ($editType) $editType.value = type;
+      if ($formEdit) $formEdit.setAttribute('action', '/admin/users/' + id);
 
-  // Abrir modal de reset de senha
-  document.querySelectorAll('.btn-reset').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.getAttribute('data-id');
-      document.getElementById('formReset').setAttribute('action', '/admin/users/'+id+'/reset-password');
+      new bootstrap.Modal($modalEdit).show();
+      return;
+    }
+
+    if (btnReset) {
+      const id = btnReset.getAttribute('data-id');
+      document.getElementById('formReset').setAttribute('action', '/admin/users/' + id + '/reset-password');
       new bootstrap.Modal(document.getElementById('modalReset')).show();
-    });
+      return;
+    }
   });
 
-  // Tooltips (BS5)
-  document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+  document.addEventListener('DOMContentLoaded', load);
+})();
 </script>
 @endpush
