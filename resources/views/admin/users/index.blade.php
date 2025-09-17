@@ -1,5 +1,5 @@
 @extends('layouts.admin')
-@section('title','Usuários')
+@section('title',__('global.users'))
 
 @section('content')
 <div class="d-flex mb-3">
@@ -8,7 +8,7 @@
     <button class="btn pm-btn pm-btn-outline-secondary">Buscar</button>
   </form>
   <button class="btn pm-btn pm-btn-primary ms-auto" data-bs-toggle="modal" data-bs-target="#modalCreate">
-    <i class="bi bi-plus-lg"></i> Novo
+    <i class="bi bi-plus-lg"></i> {{ __('global.new') }}
   </button>
 </div>
 
@@ -17,7 +17,10 @@
     <table class="table align-middle mb-0 pm-table">
       <thead class="table-light">
         <tr>
-          <th>Código</th><th>Nome</th><th>Tipo</th><th class="text-end">Ações</th>
+          <th>{{ __('global.code') }}</th>
+          <th>{{ __('global.name') }}</th>
+          <th>{{ __('global.type') }}</th>
+          <th class="text-end">{{ __('global.actions') }}</th>
         </tr>
       </thead>
       <tbody>
@@ -30,30 +33,32 @@
             <button
               class="btn btn-sm pm-btn pm-btn-dark btn-edit"
               data-id="{{ $u->id }}" data-name="{{ $u->name }}" data-type="{{ $u->type }}"
-              data-bs-toggle="tooltip" title="Editar">
+              data-bs-toggle="tooltip" title="{{ __('global.edit') }}">
               <i class="bi bi-pencil"></i>
             </button>
 
             <button
               class="btn btn-sm pm-btn pm-btn-outline-danger btn-reset"
               data-id="{{ $u->id }}"
-              data-bs-toggle="tooltip" title="Resetar senha">
+              data-bs-toggle="tooltip" title="{{ __('global.reset_password') }}">
               <i class="bi bi-key"></i>
             </button>
 
+            @if($u->type != 'admin')
             <form method="POST" action="{{ route('admin.users.destroy',$u) }}" class="d-inline delete-form">
               @csrf @method('DELETE')
               <button
                 class="btn btn-sm pm-btn pm-btn-primary"
-                data-bs-toggle="tooltip" title="Excluir">
+                data-bs-toggle="tooltip" title="{{ __('global.delete') }}">
                 <i class="bi bi-trash"></i>
               </button>
             </form>
+            @endif
           </td>
         </tr>
       @empty
         <tr>
-          <td colspan="4" class="text-muted pm-text-muted">Nenhum usuário.</td>
+          <td colspan="4" class="text-muted pm-text-muted">{{ __('global.no_user') }}</td>
         </tr>
       @endforelse
       </tbody>
@@ -70,31 +75,31 @@
     <form class="modal-content pm-form" method="POST" action="{{ route('admin.users.store') }}">
       @csrf
       <div class="modal-header">
-        <h5 class="modal-title">Novo usuário</h5>
+        <h5 class="modal-title">{{ __('global.new_user') }}</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <div class="mb-2">
-          <label class="form-label">Código</label>
+          <label class="form-label">{{ __('global.code') }}</label>
           <input name="code" class="form-control pm-input" required>
         </div>
         <div class="mb-2">
-          <label class="form-label">Nome</label>
+          <label class="form-label">{{ __('global.name') }}</label>
           <input name="name" class="form-control pm-input" required>
         </div>
         <div class="mb-2">
-          <label class="form-label">Tipo</label>
+          <label class="form-label">{{ __('global.type') }}</label>
           <select name="type" class="form-select pm-select" required>
             @foreach($types as $t) <option value="{{ $t }}">{{ $t }}</option> @endforeach
           </select>
         </div>
         <div class="mb-2">
-          <label class="form-label">Senha</label>
+          <label class="form-label">{{ __('global.password') }}</label>
           <input type="password" name="password" class="form-control pm-input" required>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn pm-btn pm-btn-primary">Salvar</button>
+        <button class="btn pm-btn pm-btn-primary">{{ __('global.save') }}</button>
       </div>
     </form>
   </div>
@@ -106,23 +111,23 @@
     <form class="modal-content pm-form" method="POST" id="formEdit">
       @csrf @method('PUT')
       <div class="modal-header">
-        <h5 class="modal-title">Editar usuário</h5>
+        <h5 class="modal-title">{{ __('global.edit_user') }}</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <div class="mb-2">
-          <label class="form-label">Nome</label>
+          <label class="form-label">{{ __('global.name') }}</label>
           <input name="name" id="editName" class="form-control pm-input" required>
         </div>
         <div class="mb-2">
-          <label class="form-label">Tipo</label>
+          <label class="form-label">{{ __('global.type') }}</label>
           <select name="type" id="editType" class="form-select pm-select" required>
             @foreach($types as $t) <option value="{{ $t }}">{{ $t }}</option> @endforeach
           </select>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn pm-btn pm-btn-primary">Salvar</button>
+        <button class="btn pm-btn pm-btn-primary">{{ __('global.save') }}</button>
       </div>
     </form>
   </div>
@@ -134,17 +139,17 @@
     <form class="modal-content pm-form" method="POST" id="formReset">
       @csrf
       <div class="modal-header">
-        <h5 class="modal-title">Redefinir senha</h5>
+        <h5 class="modal-title">{{ __('global.reset_password') }}</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <div class="mb-2">
-          <label class="form-label">Nova senha</label>
+          <label class="form-label">{{ __('global.new_password') }}</label>
           <input type="password" name="password" class="form-control pm-input" required>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn pm-btn pm-btn-outline-danger">Redefinir</button>
+        <button class="btn pm-btn pm-btn-outline-danger">{{ __('global.redefine') }}</button>
       </div>
     </form>
   </div>
@@ -156,7 +161,9 @@
   // Confirmação de exclusão
   document.querySelectorAll('.delete-form').forEach(f => {
     f.addEventListener('submit', (e) => {
-      if(!confirm('Excluir este usuário?')) e.preventDefault();
+      if (!confirm(@json(__('global.delete_this_user')))) {
+        e.preventDefault();
+      }
     });
   });
 

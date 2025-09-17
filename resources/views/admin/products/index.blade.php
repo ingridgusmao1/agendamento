@@ -1,5 +1,5 @@
 @extends('layouts.admin')
-@section('title','Produtos')
+@section('title',__('global.products'))
 
 @section('content')
 <div class="d-flex mb-3">
@@ -7,7 +7,7 @@
     <input type="text" name="q" value="{{ $q }}" class="form-control pm-input me-2" placeholder="Buscar por nome, modelo, cor">
     <button class="btn pm-btn pm-btn-outline-secondary">Buscar</button>
   </form>
-  <a href="{{ route('admin.products.create') }}" class="btn pm-btn pm-btn-primary ms-auto">Novo</a>
+  <a href="{{ route('admin.products.create') }}" class="btn pm-btn pm-btn-primary ms-auto">{{ __('global.new') }}</a>
 </div>
 
 <div class="card shadow-sm pm-card">
@@ -15,12 +15,12 @@
     <table class="table align-middle mb-0 pm-table">
       <thead class="table-light pm-table-header">
         <tr>
-          <th>Nome</th>
-          <th>Modelo</th>
-          <th>Cor</th>
-          <th>Tamanho</th>
-          <th>Preço</th>
-          <th class="text-end">Ações</th>
+          <th>{{ __('global.name') }}</th>
+          <th>{{ __('global.model') }}</th>
+          <th>{{ __('global.color') }}</th>
+          <th>{{ __('global.size') }}</th>
+          <th>{{ __('global.price') }}</th>
+          <th class="text-end">{{ __('global.actions') }}</th>
         </tr>
       </thead>
       <tbody>
@@ -34,14 +34,14 @@
             <td class="text-end">
             <a href="{{ route('admin.products.edit',$p) }}"
                 class="btn btn-sm pm-btn pm-btn-dark"
-                data-bs-toggle="tooltip" title="Editar">
+                data-bs-toggle="tooltip" title="{{ __('global.edit') }}">
                 <i class="bi bi-pencil"></i>
             </a>
 
             <form method="POST" action="{{ route('admin.products.destroy',$p) }}" class="d-inline delete-form">
                 @csrf @method('DELETE')
                 <button class="btn btn-sm pm-btn pm-btn-outline-danger"
-                        data-bs-toggle="tooltip" title="Excluir">
+                        data-bs-toggle="tooltip" title="{{ __('global.delete') }}">
                 <i class="bi bi-trash"></i>
                 </button>
             </form>
@@ -49,7 +49,7 @@
         </tr>
       @empty
         <tr>
-          <td colspan="6" class="text-muted pm-text-muted">Nenhum produto.</td>
+          <td colspan="6" class="text-muted pm-text-muted">{{ __('global.no_product') }}</td>
         </tr>
       @endforelse
       </tbody>
@@ -66,7 +66,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.delete-form').forEach(f => {
       f.addEventListener('submit', (e) => {
-        if(!confirm('Excluir este produto?')) e.preventDefault();
+        if(!confirm(@json(__('global.exclude_this_product')))) e.preventDefault();
       });
     });
   });

@@ -13,6 +13,11 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthWebController::class, 'doLogin'])->name('login.post');
 });
 
+// Fallback
+Route::fallback(function () {
+    return redirect()->route('admin.dashboard');
+});
+
 Route::post('/logout', [AuthWebController::class, 'logout'])->middleware('auth')->name('logout');
 
 // Painel ADMIN

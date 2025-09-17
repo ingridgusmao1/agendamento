@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'name','model','color','size','price','notes','complements','photo_path',
@@ -20,6 +21,11 @@ class Product extends Model
 
     public function items()
     {
-        return $this->hasMany(SaleItem::class);
+        return $this->hasMany(SaleItem::class, 'product_id');
+    }
+
+    public function saleItems()
+    {
+        return $this->hasMany(SaleItem::class, 'product_id');
     }
 }

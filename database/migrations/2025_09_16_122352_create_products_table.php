@@ -21,6 +21,7 @@ return new class extends Migration
         $t->text('notes')->nullable();
         $t->decimal('price',12,2);
         $t->string('photo_path')->nullable();
+        $t->softDeletes(); 
         $t->timestamps();
         });
     }

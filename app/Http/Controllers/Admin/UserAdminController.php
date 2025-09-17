@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\RedirectResponse;
 
 class UserAdminController extends Controller
 {
@@ -37,11 +38,11 @@ class UserAdminController extends Controller
             'code' => $data['code'],
             'name' => $data['name'],
             'type' => $data['type'],
-            'email' => $data['code'].'@local', // mantém não-nulo
+            'email' => $data['code'].'@local',
             'password' => Hash::make($data['password']),
         ]);
 
-        return back()->with('ok','Usuário criado');
+        return back()->with('ok', __('global.user_created'));
     }
 
     public function update(Request $r, User $user)
@@ -52,22 +53,27 @@ class UserAdminController extends Controller
         ]);
 
         $user->update($data);
-        return back()->with('ok','Usuário atualizado');
+        return back()->with('ok', __('global.user_updated'));
     }
 
-    public function destroy(User $user)
+    public function destroy(User $user): RedirectResponse
     {
         if (auth()->id() === $user->id) {
-            return back()->with('err','Você não pode excluir a si mesmo.');
+            return back()->withErrors(['error' => __('global.cannot_delete_self')]);
         }
+
+        if ($user->trashed()) {
+            return back()->with('ok', __('global.user_already_archived'));
+        }
+
         $user->delete();
-        return back()->with('ok','Usuário removido');
+        return back()->with('ok', __('global.user_archived'));
     }
 
     public function resetPassword(Request $r, User $user)
     {
         $data = $r->validate(['password' => 'required|string|min:4']);
         $user->update(['password' => Hash::make($data['password'])]);
-        return back()->with('ok','Senha redefinida');
+        return back()->with('ok', __('global.password_reset'));
     }
 }
