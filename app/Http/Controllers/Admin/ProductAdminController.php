@@ -3,119 +3,63 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Validators\ProductValidator;
 use App\Models\Product;
-use Illuminate\Http\RedirectResponse;
+use App\Http\Services\ProductService;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 
 class ProductAdminController extends Controller
 {
     private const PER_PAGE = 15;
 
+    public function __construct(private ProductService $service) {}
+
+    /** Página principal (filtros básicos) */
     public function index(Request $r)
     {
-        // A tabela carrega via AJAX (fetch)
-        $q = trim((string)$r->query('q', ''));
+        $q = trim((string) $r->query('q', ''));
         return view('admin.products.index', compact('q'));
     }
 
+    /** Endpoint AJAX para montar linhas da tabela */
     public function fetch(Request $r)
     {
-        $q       = trim((string) $r->query('q', ''));
-        $page    = max(1, (int) $r->query('page', 1));
-        $perPage = self::PER_PAGE;
+        $r->validate(ProductValidator::fetch());
+        $q    = trim((string)$r->query('q',''));
+        $page = max(1, (int)$r->query('page',1));
 
-        $query = Product::query()
-            ->when($q !== '', function ($w) use ($q) {
-                $w->where(function ($x) use ($q) {
-                    $x->where('name',  'like', "%{$q}%")
-                      ->orWhere('model','like', "%{$q}%")
-                      ->orWhere('color','like', "%{$q}%")
-                      ->orWhere('size', 'like', "%{$q}%");
-                });
-            })
-            ->orderBy('name');
-
-        $total = (clone $query)->count();
-        $items = $query->forPage($page, $perPage)->get();
-
-        $html = view('admin.products._rows', compact('items'))->render();
-
-        return response()->json([
-            'html'    => $html,
-            'page'    => $page,
-            'perPage' => $perPage,
-            'total'   => $total,
-            'hasPrev' => $page > 1,
-            'hasNext' => ($page * $perPage) < $total,
-        ]);
+        return response()->json(
+            $this->service->fetch($q, $page, self::PER_PAGE)
+        );
     }
 
-    public function store(Request $r)
+    /** Criar produto */
+    public function store(Request $r): RedirectResponse
     {
-        $data = $r->validate([
-            'name'        => 'required|string|max:160',
-            'model'       => 'nullable|string|max:160',
-            'color'       => 'nullable|string|max:100',
-            'size'        => 'nullable|string|max:100',
-            'price'       => 'required|numeric|min:0',
-            'notes'       => 'nullable|string',
-            'photo_path'  => 'nullable|string|max:255',
-            'complements' => 'nullable|string', // texto separado por ';'
-        ]);
-
-        $data['complements'] = $this->normalizeComplements($data['complements'] ?? null);
-
-        Product::create($data);
+        $data = $r->validate(ProductValidator::store());
+        $this->service->create($data);
 
         return back()->with('ok', __('global.product_created'));
     }
 
-    public function update(Request $r, Product $product)
+    /** Atualizar produto */
+    public function update(Request $r, Product $product): RedirectResponse
     {
-        $data = $r->validate([
-            'name'        => 'required|string|max:160',
-            'model'       => 'nullable|string|max:160',
-            'color'       => 'nullable|string|max:100',
-            'size'        => 'nullable|string|max:100',
-            'price'       => 'required|numeric|min:0',
-            'notes'       => 'nullable|string',
-            'photo_path'  => 'nullable|string|max:255',
-            'complements' => 'nullable|string', // texto separado por ';'
-        ]);
-
-        $data['complements'] = $this->normalizeComplements($data['complements'] ?? null);
-
-        $product->update($data);
+        $data = $r->validate(ProductValidator::update());
+        $this->service->update($product, $data);
 
         return back()->with('ok', __('global.product_updated'));
     }
 
+    /** Arquivar (soft delete) */
     public function destroy(Product $product): RedirectResponse
     {
-        // Política: nunca hard delete
         if ($product->trashed()) {
             return back()->with('ok', __('global.product_already_archived'));
         }
 
-        $product->delete(); // soft delete
+        $this->service->archive($product);
         return back()->with('ok', __('global.product_archived'));
-    }
-
-    /**
-     * Converte string "a; b; c" -> ['a','b','c']
-     * Remove entradas vazias e trim em cada item. Retorna null se vazio.
-     */
-    private function normalizeComplements(?string $text): ?array
-    {
-        if ($text === null) return null;
-
-        // Troca quebras de linha por ';' (evita itens quebrados), então explode
-        $text = str_replace(["\r\n","\n","\r"], ';', $text);
-
-        $parts = array_map('trim', explode(';', $text));
-        // remove vazios
-        $parts = array_values(array_filter($parts, fn($v) => $v !== ''));
-
-        return count($parts) ? $parts : null;
     }
 }
