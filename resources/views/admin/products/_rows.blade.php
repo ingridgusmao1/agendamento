@@ -4,37 +4,43 @@
 
 @forelse ($items as $p)
 <tr>
-  <td style="width:140px">
-    <div class="d-flex flex-wrap gap-1">
-      @php
-        // Blindagem local (caso algum valor legado chegue como string)
-        $photos = $p->photo_path;
-        if (!is_array($photos)) {
-            if ($photos === null || $photos === '') $photos = [];
-            else {
-                $tmp = json_decode($photos, true);
-                $photos = (json_last_error() === JSON_ERROR_NONE && is_array($tmp)) ? $tmp : [$photos];
-            }
-        }
-      @endphp
+  {{-- Coluna da imagem: mostra só o primeiro thumbnail --}}
+  <td style="width:160px">
+    @php
+      // Blindagem local para garantir array
+      $photos = $p->photo_path;
+      if (!is_array($photos)) {
+          if ($photos === null || $photos === '') {
+              $photos = [];
+          } else {
+              $tmp = json_decode($photos, true);
+              $photos = (json_last_error() === JSON_ERROR_NONE && is_array($tmp)) ? $tmp : [$photos];
+          }
+      }
+    @endphp
 
-      @forelse($photos as $path)
-        @if($path)
-          <img src="{{ Storage::url($path) }}" alt="foto" class="img-thumbnail"
-               style="width:60px;height:60px;object-fit:cover;">
-        @endif
-      @empty
-        <span class="text-muted small">—</span>
-      @endforelse
-    </div>
+    @if(count($photos))
+      <a href="{{ route('admin.products.gallery', $p) }}" title="Abrir galeria">
+        <img src="{{ Storage::url($photos[0]) }}" alt="foto"
+             class="img-thumbnail pm-thumb"
+             style="width:160px;height:160px;object-fit:cover;">
+      </a>
+    @else
+      <a href="{{ route('admin.products.gallery', $p) }}" class="d-inline-block text-center text-decoration-none"
+         style="width:160px;height:160px;line-height:160px;border:1px dashed #ccc;">
+        <span class="text-muted small">+ adicionar</span>
+      </a>
+    @endif
   </td>
 
+  {{-- Demais colunas --}}
   <td>{{ $p->name }}</td>
   <td>{{ $p->model }}</td>
   <td>{{ $p->color }}</td>
   <td>{{ $p->size }}</td>
   <td class="text-end">{{ number_format((float)$p->price, 2, ',', '.') }}</td>
 
+  {{-- Ações --}}
   <td class="text-end">
     <button
       type="button"
