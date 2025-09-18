@@ -63,7 +63,18 @@
         <div class="mb-2">
           <label class="form-label">{{ __('global.type') }}</label>
           <select name="type" class="form-select pm-select" required>
-            @foreach($types as $t) <option value="{{ $t }}">{{ $t }}</option> @endforeach
+              <option value="" disabled selected>{{ __('global.modal_choose') }}</option>
+              @foreach($types as $t)
+                  @if ($t == 'admin')
+                      <option value="{{ $t }}">{{ __('global.modal_administrator') }}</option>
+                  @elseif (in_array($t, ['cobrador', 'vendedor']))
+                      <option value="{{ $t }}">{{ ucfirst(str_replace('_', ' ', $t)) }}</option>
+                  @elseif ($t == 'vendedor_cobrador')
+                      <option value="{{ $t }}">{{ __('global.modal_salesman_collector') }}</option>
+                  @else
+                      <option value="{{ $t }}">{{ $t }}</option>
+                  @endif
+              @endforeach
           </select>
         </div>
         <div class="mb-2">
@@ -95,9 +106,18 @@
         <div class="mb-2">
           <label class="form-label">{{ __('global.type') }}</label>
           <select name="type" id="editType" class="form-select pm-select" required>
-            @foreach($types as $t)
-              <option value="{{ $t }}">{{ $t }}</option>
-            @endforeach
+              <option value="" disabled selected>{{ __('global.modal_choose') }}</option>
+              @foreach($types as $t)
+                  @if ($t == 'admin')
+                      <option value="{{ $t }}">{{ __('global.modal_administrator') }}</option>
+                  @elseif (in_array($t, ['cobrador', 'vendedor']))
+                      <option value="{{ $t }}">{{ ucfirst(str_replace('_', ' ', $t)) }}</option>
+                  @elseif ($t == 'vendedor_cobrador')
+                      <option value="{{ $t }}">{{ __('global.modal_salesman_collector') }}</option>
+                  @else
+                      <option value="{{ $t }}">{{ $t }}</option>
+                  @endif
+              @endforeach
           </select>
         </div>
       </div>
@@ -133,6 +153,11 @@
 
 @push('scripts')
 <script>
+$('#modalCreate').on('show.bs.modal', function () {
+    const select = $(this).find('select[name="type"]');
+    select.val("");
+});
+
 (function(){
   let page = 1;
   const $q        = document.querySelector('input[name="q"]');

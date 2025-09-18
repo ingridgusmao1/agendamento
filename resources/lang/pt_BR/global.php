@@ -62,4 +62,10 @@ return [
     'product_already_archived' => 'Produto já estava arquivado.',
     'search_product_placeholder' => 'Buscar por nome, modelo, cor ou tamanho',
     'complements_hint' => 'Separe cada informação por ponto e vírgula. Ex.: almofadas extras; couro ou material sintético; partes removíveis',
+    'new_user' => 'Novo usuário',
+    'modal_choose' => 'Escolha uma opção',
+    'modal_administrator' => 'Administrador',
+    'modal_salesman_collector' => 'Vendedor e Cobrador',
+    'collector' => 'Cobrador',
+    'salesman' => 'Vendedor',
 ];

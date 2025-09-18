@@ -2,7 +2,19 @@
 <tr>
   <td>{{ $u->code }}</td>
   <td>{{ $u->name }}</td>
-  <td>{{ $u->type }}</td>
+  <td>
+    @if($u->type === 'admin')
+      {{ __('global.modal_administrator') }}
+    @elseif($u->type === 'vendedor')
+      {{ __('global.salesman') }}
+    @elseif($u->type === 'cobrador')
+      {{ __('global.collector') }}
+    @elseif($u->type === 'vendedor_cobrador')
+      {{ __('global.modal_salesman_collector') }}
+    @else
+      {{ $u->type }}
+    @endif
+  </td>
   <td class="text-end">
     <button
       class="btn btn-sm pm-btn pm-btn-dark btn-edit"
