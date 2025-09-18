@@ -24,9 +24,10 @@ class Product extends Model
     /* ----------------- MUTATOR: SEMPRE SALVA COMO ARRAY JSON ----------------- */
     public function setComplementsAttribute($value): void
     {
-        // Como há cast 'array', gravamos o ARRAY normalizado,
-        // evitando json_encode aqui para não duplicar/estragar o cast.
-        $this->attributes['complements'] = $this->normalizeToArray($value);
+        // REMOVIDO o acesso direto a $this->attributes.
+        // Mantido por compatibilidade com seu comentário, mas sem efeito.
+        // Use o mutator moderno abaixo (complements()) para normalizar.
+        // (intencionalmente vazio)
     }
 
     /* --------------- ACCESSOR: TEXTO PARA A UI ("a; b; c") ------------------ */
@@ -91,6 +92,15 @@ class Product extends Model
                 }
                 return [];
             }
+        );
+    }
+
+    // Mutator moderno para COMPLEMENTS: normaliza e deixa o CAST serializar.
+    protected function complements(): Attribute
+    {
+        return Attribute::make(
+            set: fn ($value) => $this->normalizeToArray($value)
+            // get() não é necessário: o cast 'array' já decodifica do JSON
         );
     }
 }

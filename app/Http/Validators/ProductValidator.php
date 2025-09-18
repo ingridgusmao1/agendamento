@@ -48,8 +48,9 @@ final class ProductValidator
             'complements' => ['nullable','string'],
 
             // novas regras de upload
-            'photos'      => ['nullable','array','max:10'],
-            'photos.*'    => ['file','mimes:jpg,jpeg,png,webp','max:8192'], // 8MB por arquivo
+            'photos'   => ['nullable','array','max:10'],
+            'photos.*' => ['nullable','image','mimes:jpg,jpeg,png,webp','max:16384'], // 16 MB por arquivo
+
         ];
     }
 
