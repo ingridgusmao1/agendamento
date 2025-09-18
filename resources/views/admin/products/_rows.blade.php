@@ -1,13 +1,3 @@
-@php
-  // helper local para string de complements
-  $toStr = function ($arr) {
-      if (is_array($arr) && count($arr)) {
-          return implode('; ', array_map('trim', $arr));
-      }
-      return '';
-  };
-@endphp
-
 @forelse ($items as $p)
 <tr>
   <td>{{ $p->name }}</td>
@@ -19,14 +9,14 @@
     <button
       class="btn btn-sm pm-btn pm-btn-dark btn-edit-product"
       data-id="{{ $p->id }}"
-      data-name="{{ $p->name }}"
-      data-model="{{ $p->model }}"
-      data-color="{{ $p->color }}"
-      data-size="{{ $p->size }}"
+      data-name="{{ e($p->name) }}"
+      data-model="{{ e($p->model) }}"
+      data-color="{{ e($p->color) }}"
+      data-size="{{ e($p->size) }}"
       data-price="{{ $p->price }}"
-      data-notes="{{ $p->notes }}"
-      data-photo="{{ $p->photo_path }}"
-      data-complements="{{ $toStr($p->complements) }}"
+      data-notes="{{ e($p->notes) }}"
+      data-photo="{{ e($p->photo_path) }}"
+      data-complements="{{ e($p->complements_text) }}"
       data-bs-toggle="tooltip" title="{{ __('global.edit') }}">
       <i class="bi bi-pencil"></i>
     </button>

@@ -9,7 +9,6 @@ class ProductService
 {
     public function __construct(private ViewFactory $view) {}
 
-    /** Query + paginação + render do partial para o fetch AJAX */
     public function fetch(string $q, int $page, int $perPage): array
     {
         $query = Product::query()
@@ -19,7 +18,7 @@ class ProductService
                     $x->where('name',  'like', $like)
                       ->orWhere('model','like', $like)
                       ->orWhere('color','like', $like)
-                      ->orWhere('size', 'like', $like);
+                      ->orWhere('size',  'like', $like);
                 });
             })
             ->orderBy('name');
@@ -39,35 +38,22 @@ class ProductService
         ];
     }
 
-    /** Criação com normalização de complements (responsabilidade de negócio) */
+    /** Criação – o mutator do Model garante JSON array em complements */
     public function create(array $data): Product
     {
-        $data['complements'] = $this->normalizeComplements($data['complements'] ?? null);
         return Product::create($data);
     }
 
-    /** Atualização com normalização */
+    /** Atualização – idem */
     public function update(Product $product, array $data): void
     {
-        $data['complements'] = $this->normalizeComplements($data['complements'] ?? null);
         $product->update($data);
     }
 
-    /** Arquivar (soft delete) */
     public function archive(Product $product): void
     {
         if (!$product->trashed()) {
             $product->delete();
         }
-    }
-
-    /** "a; b\nc" -> "a; b; c" (string) ou retorne array se o domínio exigir */
-    private function normalizeComplements(?string $text): ?string
-    {
-        if ($text === null) return null;
-        $text = str_replace(["\r\n","\n","\r"], ';', $text);
-        $parts = array_map('trim', explode(';', $text));
-        $parts = array_values(array_filter($parts, fn($v) => $v !== ''));
-        return count($parts) ? implode('; ', $parts) : null;
     }
 }

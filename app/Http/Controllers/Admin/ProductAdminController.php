@@ -56,10 +56,10 @@ class ProductAdminController extends Controller
     public function destroy(Product $product): RedirectResponse
     {
         if ($product->trashed()) {
-            return back()->with('ok', __('global.product_already_archived'));
+            return back()->with('ok', __('global.product_already_deleted'));
         }
 
         $this->service->archive($product);
-        return back()->with('ok', __('global.product_archived'));
+        return back()->with('ok', __('global.product_deleted'));
     }
 }
