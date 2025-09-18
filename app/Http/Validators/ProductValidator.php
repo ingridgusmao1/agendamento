@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Validators;
+use Illuminate\Validation\Rule;
 
 final class ProductValidator
 {
@@ -34,4 +35,38 @@ final class ProductValidator
         // mesmas regras do store neste caso
         return self::store();
     }
+
+    public static function rulesForStore(): array
+    {
+        return [
+            'name'        => ['required','string','max:255'],
+            'model'       => ['nullable','string','max:255'],
+            'color'       => ['nullable','string','max:255'],
+            'size'        => ['nullable','string','max:255'],
+            'price'       => ['required','numeric','min:0'],
+            'notes'       => ['nullable','string'],
+            'complements' => ['nullable','string'],
+
+            // novas regras de upload
+            'photos'      => ['nullable','array','max:10'],
+            'photos.*'    => ['file','mimes:jpg,jpeg,png,webp','max:8192'], // 8MB por arquivo
+        ];
+    }
+
+    public static function rulesForUpdate(int $productId): array
+    {
+        return [
+            'name'        => ['sometimes','required','string','max:255'],
+            'model'       => ['sometimes','nullable','string','max:255'],
+            'color'       => ['sometimes','nullable','string','max:255'],
+            'size'        => ['sometimes','nullable','string','max:255'],
+            'price'       => ['sometimes','required','numeric','min:0'],
+            'notes'       => ['sometimes','nullable','string'],
+            'complements' => ['sometimes','nullable','string'],
+
+            'photos'      => ['sometimes','array'],
+            'photos.*'    => ['file','mimes:jpg,jpeg,png,webp','max:8192'],
+        ];
+    }
+
 }

@@ -68,4 +68,5 @@ return [
     'modal_salesman_collector' => 'Vendedor e Cobrador',
     'collector' => 'Cobrador',
     'salesman' => 'Vendedor',
+    'photo_caption' => 'Até 10 imagens (JPG, PNG, WEBP).',
 ];

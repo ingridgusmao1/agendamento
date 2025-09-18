@@ -29,7 +29,7 @@ Route::prefix('admin')->middleware(['auth','ensure.usertype:admin'])->name('admi
     Route::post('/products', [ProductAdminController::class, 'store'])->name('products.store');
     Route::put('/products/{product}', [ProductAdminController::class, 'update'])->name('products.update');
     Route::delete('/products/{product}', [ProductAdminController::class, 'destroy'])->name('products.destroy');
-
+    
     // Paginação de produtos
     Route::get('/products/fetch', [ProductAdminController::class, 'fetch'])->name('products.fetch');
 

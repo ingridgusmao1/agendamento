@@ -3,63 +3,98 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Validators\ProductValidator;
-use App\Models\Product;
 use App\Http\Services\ProductService;
+use App\Models\Product;
 use Illuminate\Http\Request;
-use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Validator;
+use App\Http\Validators\ProductValidator;
 
 class ProductAdminController extends Controller
 {
-    private const PER_PAGE = 15;
-
     public function __construct(private ProductService $service) {}
 
-    /** Página principal (filtros básicos) */
-    public function index(Request $r)
+    public function index()
     {
-        $q = trim((string) $r->query('q', ''));
-        return view('admin.products.index', compact('q'));
+        // Renderize sua view principal de listagem.
+        // A tabela é preenchida via AJAX chamando route('admin.products.fetch').
+        return view('admin.products.index');
     }
 
-    /** Endpoint AJAX para montar linhas da tabela */
-    public function fetch(Request $r)
+    public function fetch(Request $request)
     {
-        $r->validate(ProductValidator::fetch());
-        $q    = trim((string)$r->query('q',''));
-        $page = max(1, (int)$r->query('page',1));
+        try {
+            $q       = (string) $request->get('q', '');
+            $page    = (int) $request->get('page', 1);
+            $perPage = (int) $request->get('perPage', 20);
 
-        return response()->json(
-            $this->service->fetch($q, $page, self::PER_PAGE)
-        );
+            $payload = $this->service->fetch($q, $page, $perPage);
+
+            return response()->json($payload);
+        } catch (\Throwable $e) {
+            \Log::error('Products fetch failed', ['e' => $e]);
+            // devolve algo consistente para o front não exibir "NaN"
+            return response()->json([
+                'html'    => view('admin.products._rows', ['items' => collect()])->render(),
+                'total'   => 0,
+                'page'    => 1,
+                'perPage' => (int) $request->get('perPage', 20),
+                'hasMore' => false,
+                'error'   => 'fetch_failed',
+            ], 500);
+        }
     }
 
-    /** Criar produto */
-    public function store(Request $r): RedirectResponse
+    public function store(Request $request)
     {
-        $data = $r->validate(ProductValidator::store());
-        $this->service->create($data);
+        // Validação via seu ProductValidator (ajuste nomes de métodos conforme o seu arquivo)
+        $validator = Validator::make($request->all(), ProductValidator::rulesForStore());
+        $validator->validate();
 
-        return back()->with('ok', __('global.product_created'));
-    }
+        $product = $this->service->store($request->all());
 
-    /** Atualizar produto */
-    public function update(Request $r, Product $product): RedirectResponse
-    {
-        $data = $r->validate(ProductValidator::update());
-        $this->service->update($product, $data);
-
-        return back()->with('ok', __('global.product_updated'));
-    }
-
-    /** Arquivar (soft delete) */
-    public function destroy(Product $product): RedirectResponse
-    {
-        if ($product->trashed()) {
-            return back()->with('ok', __('global.product_already_deleted'));
+        // Redirecione ou responda JSON conforme seu fluxo
+        if ($request->wantsJson()) {
+            return response()->json(['ok' => true, 'id' => $product->id]);
         }
 
-        $this->service->archive($product);
-        return back()->with('ok', __('global.product_deleted'));
+        return redirect()->route('admin.products.index')
+            ->with('success', __('global.saved'));
+    }
+
+    public function update(Request $request, Product $product)
+    {
+        $validator = Validator::make($request->all(), ProductValidator::rulesForUpdate($product->id));
+        $validator->validate();
+
+        // (Opcional) remoção de imagens marcadas
+        $remove = $request->input('remove_photos', []);
+        if (!empty($remove)) {
+            $this->service->removeImages($product, $remove);
+        }
+
+        $product = $this->service->update($product, $request->all());
+
+        if ($request->wantsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
+        return redirect()->route('admin.products.index')
+            ->with('success', __('global.saved'));
+    }
+
+    public function destroy(Product $product)
+    {
+        // (Opcional) apaga arquivos antes de deletar o produto
+        $paths = $product->photo_path ?? [];
+        foreach ($paths as $p) {
+            if ($p) {
+                \Storage::disk('public')->delete($p);
+            }
+        }
+
+        $product->delete();
+
+        return redirect()->route('admin.products.index')
+            ->with('success', __('global.deleted'));
     }
 }

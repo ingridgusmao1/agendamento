@@ -17,12 +17,13 @@
     <table class="table align-middle mb-0 pm-table">
       <thead class="table-light">
         <tr>
+          <th></th>
           <th>{{ __('global.name') }}</th>
           <th>{{ __('global.model') }}</th>
           <th>{{ __('global.color') }}</th>
           <th>{{ __('global.size') }}</th>
           <th class="text-end">{{ __('global.price') }}</th>
-          <th class="text-end">{{ __('global.actions') }}</th>
+          <th class="text-center">{{ __('global.actions') }}</th>
         </tr>
       </thead>
       <tbody id="products-tbody">
@@ -47,7 +48,7 @@
 {{-- Modal Criar Produto --}}
 <div class="modal fade" id="modalCreate" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
-    <form class="modal-content pm-form" method="POST" action="{{ route('admin.products.store') }}">
+    <form class="modal-content pm-form" method="POST" action="{{ route('admin.products.store') }}" enctype="multipart/form-data">
       @csrf
       <div class="modal-header">
         <h5 class="modal-title">{{ __('global.new_product') }}</h5>
@@ -81,7 +82,8 @@
           </div>
           <div class="col-12">
             <label class="form-label">{{ __('global.photo') }}</label>
-            <input name="photo_path" class="form-control pm-input">
+            <input name="photos[]" type="file" class="form-control pm-input" accept="image/*" multiple>
+            <small class="text-muted">{{ __('global.photo_caption') }}</small>
           </div>
           <div class="col-12">
             <label class="form-label">{{ __('global.complementary_info') }}</label>
@@ -100,7 +102,7 @@
 {{-- Modal Editar Produto --}}
 <div class="modal fade" id="modalEdit" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
-    <form class="modal-content pm-form" method="POST" id="formEditProduct">
+    <form class="modal-content pm-form" method="POST" id="formEditProduct" enctype="multipart/form-data">
       @csrf @method('PUT')
       <div class="modal-header">
         <h5 class="modal-title">{{ __('global.edit_product') }}</h5>
@@ -134,7 +136,8 @@
           </div>
           <div class="col-12">
             <label class="form-label">{{ __('global.photo') }}</label>
-            <input name="photo_path" id="editPhoto" class="form-control pm-input">
+            <input name="photos[]" type="file" class="form-control pm-input" accept="image/*" multiple>
+            <small class="text-muted">{{ __('global.photo_caption') }}</small>
           </div>
           <div class="col-12">
             <label class="form-label">{{ __('global.complementary_info') }}</label>
