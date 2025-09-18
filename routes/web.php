@@ -29,7 +29,7 @@ Route::prefix('admin')->middleware(['auth','ensure.usertype:admin'])->name('admi
     Route::post('/products', [ProductAdminController::class, 'store'])->name('products.store');
     Route::put('/products/{product}', [ProductAdminController::class, 'update'])->name('products.update');
     Route::delete('/products/{product}', [ProductAdminController::class, 'destroy'])->name('products.destroy');
-    
+
     // Paginação de produtos
     Route::get('/products/fetch', [ProductAdminController::class, 'fetch'])->name('products.fetch');
 
@@ -44,4 +44,12 @@ Route::prefix('admin')->middleware(['auth','ensure.usertype:admin'])->name('admi
 
     // Paginação de usuários
     Route::get('/users/fetch', [UserAdminController::class, 'fetch'])->name('users.fetch');
+
+    //------------------------------------------------------------------------------------------------------------------------
+
+    // Galeria
+    Route::get('products/{product}/gallery', [ProductAdminController::class, 'gallery'])->name('products.gallery');
+    Route::get('products/{product}/images', [ProductAdminController::class, 'images'])->name('products.images');
+    Route::post('products/{product}/images', [ProductAdminController::class, 'uploadImages'])->name('products.images.upload');
+    Route::delete('products/{product}/images/{index}', [ProductAdminController::class, 'deleteImage'])->name('products.images.delete');
 });

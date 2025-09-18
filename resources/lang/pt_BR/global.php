@@ -69,4 +69,9 @@ return [
     'collector' => 'Cobrador',
     'salesman' => 'Vendedor',
     'photo_caption' => 'Até 10 imagens (JPG, PNG, WEBP).',
+    'gallery' => 'Galeria',
+    'max_images_reached'    => 'Limite de 10 imagens por produto.',
+    'images_uploaded_success' => 'Imagens enviadas com sucesso.',
+    'image_not_found'       => 'Imagem não encontrada.',
+    'image_deleted_success' => 'Imagem removida com sucesso.',
 ];
