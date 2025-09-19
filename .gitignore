@@ -54,3 +54,7 @@ Thumbs.db
 
 # Dependências do Composer
 /vendor/
+
+/storage/app/public/products/*
+!/storage/app/public/products/.gitkeep
+/public/storage
