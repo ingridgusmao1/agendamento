@@ -265,7 +265,7 @@
             </div>
             <div class="form-check text-center">
               <input class="form-check-input chk-item" type="checkbox" value="${it.ID}">
-              <span class="small text-muted">#${it.ID}</span>
+              <span class="small text-muted">IMG ${parseInt(it.ID, 10) + 1}</span>
             </div>
           </label>
         </div>
