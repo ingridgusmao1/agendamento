@@ -58,3 +58,4 @@ Thumbs.db
 /storage/app/public/products/*
 !/storage/app/public/products/.gitkeep
 /public/storage
+/public/customers/

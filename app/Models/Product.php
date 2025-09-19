@@ -24,11 +24,9 @@ class Product extends Model
     /* ----------------- MUTATOR: SEMPRE SALVA COMO ARRAY JSON ----------------- */
     public function setComplementsAttribute($value): void
     {
-        // REMOVIDO o acesso direto a $this->attributes.
-        // Mantido por compatibilidade com seu comentário, mas sem efeito.
-        // Use o mutator moderno abaixo (complements()) para normalizar.
-        // (intencionalmente vazio)
+        $this->attributes['complements'] = json_encode($this->normalizeToArray($value), JSON_UNESCAPED_UNICODE);
     }
+
 
     /* --------------- ACCESSOR: TEXTO PARA A UI ("a; b; c") ------------------ */
     public function getComplementsTextAttribute(): string
