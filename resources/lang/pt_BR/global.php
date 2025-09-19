@@ -115,4 +115,6 @@ return [
     'updated_success' => 'Atualizado com sucesso.',
     'lat' => 'Latitude',
     'lng' => 'Longitude',
+    'exclusion_customer_not_possible' => 'Não é possível excluir: existem vendas associadas a este cliente.',
+    'deleted_success' => 'Removido com sucesso.',
 ];

@@ -72,7 +72,13 @@ class CustomerAdminController extends Controller
 
     public function destroy(Customer $customer)
     {
+        if ($customer->sales()->exists()) {
+            return back()->with('err', trans('global.exclusion_customer_not_possible'));
+        }
+
+        // segue o fluxo normal de remoção (inclui apagar avatar no service)
         $this->service->destroy($customer);
+
         return back()->with('ok', trans('global.deleted_success'));
     }
 }
