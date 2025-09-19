@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Web\AuthWebController;
 use App\Http\Controllers\Admin\ProductAdminController;
 use App\Http\Controllers\Admin\UserAdminController;
+use App\Http\Controllers\Admin\CustomerAdminController;
 
 Route::get('/', fn() => redirect()->route('admin.dashboard'));
 
@@ -62,4 +63,12 @@ Route::prefix('admin')->middleware(['auth','ensure.usertype:admin'])->name('admi
     // (Opcional) manter a remoção por índice individual, se ainda usar em algum lugar:
     Route::delete('products/{product}/images/{index}', [ProductAdminController::class, 'deleteImage'])->name('products.images.delete');
 
+    //------------------------------------------------------------------------------------------------------------------------
+
+    // Clientes
+    Route::get('/customers',        [CustomerAdminController::class, 'index'])->name('customers.index');
+    Route::get('/customers/fetch',  [CustomerAdminController::class, 'fetch'])->name('customers.fetch');
+    Route::post('/customers',       [CustomerAdminController::class, 'store'])->name('customers.store');
+    Route::put('/customers/{customer}', [CustomerAdminController::class, 'update'])->name('customers.update');
+    Route::delete('/customers/{customer}', [CustomerAdminController::class, 'destroy'])->name('customers.destroy');
 });
