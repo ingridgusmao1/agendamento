@@ -3,71 +3,84 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Validators\UserValidator;
 use App\Models\User;
+use App\Http\Services\UserService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\RedirectResponse;
 
 class UserAdminController extends Controller
 {
+    private const PER_PAGE = 15;
+
+    public function __construct(private UserService $service) {}
+
+    /** Página principal com tipos disponíveis para o <select> */
     public function index(Request $r)
     {
-        $q = trim((string)$r->query('q', ''));
-        $items = User::query()
-            ->when($q !== '', fn($w) =>
-                $w->where('name','like',"%$q%")
-                  ->orWhere('code','like',"%$q%"))
-            ->orderBy('name')
-            ->paginate(20)
-            ->withQueryString();
+        $q = trim((string) $r->query('q', ''));
+        $types = UserValidator::TYPES;
 
-        $types = ['admin','vendedor','cobrador','vendedor_cobrador'];
-        return view('admin.users.index', compact('items','q','types'));
+        return view('admin.users.index', compact('q','types'));
     }
 
-    public function store(Request $r)
+    /** Endpoint AJAX para montar linhas da tabela */
+    public function fetch(Request $r)
     {
-        $data = $r->validate([
-            'code' => 'required|string|max:50|unique:users,code',
-            'name' => 'required|string|max:120',
-            'type' => 'required|in:admin,vendedor,cobrador,vendedor_cobrador',
-            'password' => 'required|string|min:4',
-        ]);
+        $r->validate(UserValidator::fetch());
+        $q    = trim((string)$r->query('q',''));
+        $page = max(1, (int)$r->query('page',1));
 
-        User::create([
-            'code' => $data['code'],
-            'name' => $data['name'],
-            'type' => $data['type'],
-            'email' => $data['code'].'@local', // mantém não-nulo
-            'password' => Hash::make($data['password']),
-        ]);
-
-        return back()->with('ok','Usuário criado');
+        return response()->json(
+            $this->service->fetch($q, $page, self::PER_PAGE)
+        );
     }
 
-    public function update(Request $r, User $user)
+    /** Criar usuário */
+    public function store(Request $r): RedirectResponse
     {
-        $data = $r->validate([
-            'name' => 'required|string|max:120',
-            'type' => 'required|in:admin,vendedor,cobrador,vendedor_cobrador',
-        ]);
+        $data = $r->validate(UserValidator::store());
+        $this->service->create($data);
 
-        $user->update($data);
-        return back()->with('ok','Usuário atualizado');
+        return back()->with('ok', __('global.user_created'));
     }
 
-    public function destroy(User $user)
+    /** Atualizar usuário */
+    public function update(Request $r, User $user): RedirectResponse
     {
+        $data = $r->validate(UserValidator::update($user->id));
+        $this->service->update($user, $data);
+
+        return back()->with('ok', __('global.user_updated'));
+    }
+
+    /** Reset de senha */
+    public function resetPassword(Request $r, User $user): RedirectResponse
+    {
+        $data = $r->validate(UserValidator::resetPassword());
+        $this->service->resetPassword($user, $data['password']);
+
+        return back()->with('ok', __('global.password_reset'));
+    }
+
+    /** Arquivar (soft delete) com proteções */
+    public function destroy(User $user): RedirectResponse
+    {
+        // Não permitir apagar a si mesmo
         if (auth()->id() === $user->id) {
-            return back()->with('err','Você não pode excluir a si mesmo.');
+            return back()->withErrors(['error' => __('global.cannot_delete_self')]);
         }
-        $user->delete();
-        return back()->with('ok','Usuário removido');
-    }
 
-    public function resetPassword(Request $r, User $user)
-    {
-        $data = $r->validate(['password' => 'required|string|min:4']);
-        $user->update(['password' => Hash::make($data['password'])]);
-        return back()->with('ok','Senha redefinida');
+        // Não permitir apagar contas admin
+        if ($user->type === 'admin') {
+            return back()->withErrors(['error' => __('global.cannot_delete_admin')]);
+        }
+
+        if ($user->trashed()) {
+            return back()->with('ok', __('global.user_already_archived'));
+        }
+
+        $this->service->archive($user);
+        return back()->with('ok', __('global.user_archived'));
     }
 }
