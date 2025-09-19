@@ -1,14 +1,14 @@
 /* ===== Paleta ===== */
 :root{
-  --pm-primary:        #F44336; /* vermelho principal */
-  --pm-primary-dark:   #D32F2F; /* vermelho escuro */
-  --pm-primary-light:  #FFCDD2; /* vermelho claro */
+  --pm-primary:        #455a64;
+  --pm-primary-dark:   #607d8b;
+  --pm-primary-light:  #cfd8dc;
   --pm-white:          #FFFFFF;
   --pm-black:          #212121;
-  --pm-gray-700:       #424242; /* cinza escuro */
-  --pm-gray-600:       #757575; /* texto secundário */
-  --pm-gray-500:       #9E9E9E; /* acento */
-  --pm-divider:        #BDBDBD; /* divisores/bordas leves */
+  --pm-gray-700:       #424242;
+  --pm-gray-600:       #757575;
+  --pm-gray-500:       #9E9E9E;
+  --pm-divider:        #BDBDBD;
 }
 
 /* ===== Reset suave para tipografia ===== */
@@ -274,3 +274,13 @@ body{
   border-color: var(--pm-primary);
   color: var(--pm-white);
 }
+
+/* ===== Quando o select está com valor vazio ===== */
+select:invalid {
+  color: gray;
+  font-style: italic;
+}
+
+.pm-thumbs { display:grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap:12px; }
+.pm-thumbs a { display:block; width:160px; height:160px; overflow:hidden; border-radius:8px; }
+.pm-thumbs img { width:100%; height:100%; object-fit:cover; display:block; }
