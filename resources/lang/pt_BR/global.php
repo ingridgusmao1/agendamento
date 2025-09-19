@@ -113,4 +113,6 @@ return [
     'customer_not_found' => 'Cliente não encontrado.',
     'customer_deleted' => 'Cliente removido com sucesso.',
     'updated_success' => 'Atualizado com sucesso.',
+    'lat' => 'Latitude',
+    'lng' => 'Longitude',
 ];

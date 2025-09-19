@@ -105,9 +105,7 @@ class CustomerService
     private function saveAvatar(Customer $customer, \Illuminate\Http\UploadedFile $file): string
     {
         $dir = public_path('customers');
-        if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
-        }
+        if (!is_dir($dir)) { mkdir($dir, 0755, true); }
 
         $ext   = strtolower($file->getClientOriginalExtension() ?: 'jpg');
         $slug  = \Illuminate\Support\Str::slug((string) $customer->name) ?: 'cliente';
@@ -116,7 +114,7 @@ class CustomerService
         // grava em public/customers
         $file->move($dir, $fname);
 
-        // caminho relativo para servir via /customers/...
+        // salva no banco caminho relativo (igual aos products)
         return 'customers/'.$fname;
     }
 }

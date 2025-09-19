@@ -30,9 +30,7 @@ final class CustomerValidator
             'other_contact'   => ['nullable','string','max:255'],
             'lat'             => ['nullable','numeric'],
             'lng'             => ['nullable','numeric'],
-
-            // avatar único (não clicável; máximo 240x240)
-            'avatar'          => ['nullable','image','mimes:jpg,jpeg,png,webp','max:4096','dimensions:max_width=240,max_height=240'],
+            'avatar'          => ['nullable','image','mimes:jpg,jpeg,png,webp','max:4096'],
         ];
     }
 
@@ -51,8 +49,7 @@ final class CustomerValidator
             'other_contact'   => ['sometimes','nullable','string','max:255'],
             'lat'             => ['sometimes','nullable','numeric'],
             'lng'             => ['sometimes','nullable','numeric'],
-
-            'avatar'          => ['sometimes','nullable','image','mimes:jpg,jpeg,png,webp','max:4096','dimensions:max_width=240,max_height=240'],
+            'avatar'          => ['sometimes','nullable','image','mimes:jpg,jpeg,png,webp'],
         ];
     }
 }

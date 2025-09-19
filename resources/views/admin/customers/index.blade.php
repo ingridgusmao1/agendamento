@@ -2,6 +2,15 @@
 @section('title', __('global.customers'))
 
 @section('content')
+@if ($errors->any())
+  <div class="alert alert-danger">
+    <ul class="mb-0">
+      @foreach ($errors->all() as $error)
+        <li>{{ $error }}</li>
+      @endforeach
+    </ul>
+  </div>
+@endif
 <div class="d-flex mb-3">
   <div class="d-flex pm-form flex-grow-1">
     <input type="text" name="q" value="{{ $q ?? '' }}" class="form-control pm-input me-2"
@@ -26,9 +35,7 @@
           <th class="text-end" style="width:140px">{{ __('global.actions') }}</th>
         </tr>
       </thead>
-      <tbody id="tbodyRows">
-        {{-- populado via AJAX --}}
-      </tbody>
+      <tbody id="tbodyRows"></tbody>
     </table>
   </div>
 

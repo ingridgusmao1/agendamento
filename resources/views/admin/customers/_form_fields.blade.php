@@ -42,11 +42,11 @@
     <input type="text" name="rg" class="form-control">
   </div>
   <div class="col-md-2">
-    <label class="form-label">Lat</label>
+    <label class="form-label">{{ __('global.lat') }}</label>
     <input type="number" step="any" name="lat" class="form-control">
   </div>
   <div class="col-md-2">
-    <label class="form-label">Lng</label>
+    <label class="form-label">{{ __('global.lng') }}</label>
     <input type="number" step="any" name="lng" class="form-control">
   </div>
 
@@ -54,6 +54,9 @@
     <label class="form-label">{{ __('global.avatar') }} (max 240×240)</label>
     <input type="file" name="avatar" class="form-control" accept=".jpg,.jpeg,.png,.webp">
     <div class="form-text">{{ __('global.image_constraints_240') }}</div>
+    @error('avatar')
+        <div class="text-danger small">{{ $message }}</div>
+    @enderror
   </div>
   <div class="col-md-2">
     <img data-avatar-preview src="https://via.placeholder.com/240?text=Avatar"
