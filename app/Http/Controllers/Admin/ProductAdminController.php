@@ -165,11 +165,8 @@ class ProductAdminController extends Controller
     /** Tela da galeria */
     public function gallery(Product $product)
     {
-        $arr = is_array($product->photo_path)
-            ? $product->photo_path
-            : (is_string($product->photo_path) ? (json_decode($product->photo_path, true) ?: []) : []);
-
-        $canUpload = count($arr) < self::MAX_IMAGES;
+        $paths = (array) ($product->photo_path ?? []);
+        $canUpload = count($paths) < self::MAX_IMAGES;
 
         return view('admin.products.gallery', compact('product', 'canUpload'));
     }
@@ -177,51 +174,38 @@ class ProductAdminController extends Controller
     /** Feed JSON para o nanogallery2 */
     public function images(Product $product)
     {
-        $paths = is_array($product->photo_path)
-            ? $product->photo_path
-            : (is_string($product->photo_path) ? (json_decode($product->photo_path, true) ?: []) : []);
+        $paths = (array) ($product->photo_path ?? []);
 
         $items = collect($paths)->values()->map(function ($path, $i) {
-            $url = Storage::url($path); // /storage/products/xxx.jpg
+            $url = \Storage::url($path);
             return [
                 'src'   => $url,
-                'srct'  => $url,     // mesma imagem como thumb (ajuste se tiver variação)
+                'srct'  => $url,
                 'title' => '',
-                'ngid'  => (string)$i, // índice no array
+                'ID'    => (string) $i,
                 'kind'  => 'image',
             ];
         });
 
         return response()->json([
-            'items'      => $items,
-            'canUpload'  => count($paths) < self::MAX_IMAGES,
-            'maxImages'  => self::MAX_IMAGES,
+            'items'     => $items,
+            'canUpload' => count($paths) < self::MAX_IMAGES,
+            'maxImages' => self::MAX_IMAGES,
         ]);
     }
 
     /** Upload múltiplo até 10 imagens (disk public) */
-    public function uploadImages(Request $request, Product $product)
+    public function uploadImages(Request $request, Product $product, ProductService $service)
     {
-        $request->validate([
-            'files.*' => ['required', 'image', 'max:5120'], // 5MB por arquivo
-        ]);
+        $request->validate(ProductValidator::galleryUpload());
 
-        $paths = $product->photo_path ?? [];
+        $added = $service->addPhotos($product, $request);
 
-        $files = $request->file('files', []);
-        if (count($paths) + count($files) > self::MAX_IMAGES) {
-            return back()->with('err', __('global.max_images_reached'));
+        if ($added === 0) {
+            return back()->with('err', trans('global.no_files_or_limit'));
         }
 
-        foreach ($files as $file) {
-            // salva em storage/app/public/products
-            $stored = $file->store('products', 'public'); // retorna "products/arquivo.ext"
-            $paths[] = $stored;
-        }
-
-        $product->update(['photo_path' => array_values($paths)]);
-
-        return back()->with('ok', __('global.images_uploaded_success'));
+        return back()->with('ok', trans('global.images_uploaded_success'));
     }
 
     /** Remover imagem por índice do array */
@@ -245,5 +229,19 @@ class ProductAdminController extends Controller
         $product->update(['photo_path' => $paths]);
 
         return back()->with('ok', __('global.image_deleted_success'));
+    }
+
+    public function deleteImagesBatch(Request $request, Product $product, ProductService $service)
+    {
+        $data = $request->validate(ProductValidator::galleryDelete());
+        $indexes = array_values(array_unique(array_map('intval', $data['indexes'] ?? [])));
+
+        if (!$indexes) {
+            return back()->with('err', trans('global.select_at_least_one'));
+        }
+
+        $service->removeImages($product, $indexes);
+
+        return back()->with('ok', trans('global.image_deleted_success'));
     }
 }

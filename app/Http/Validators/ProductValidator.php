@@ -36,6 +36,7 @@ final class ProductValidator
         return self::store();
     }
 
+    // Adição via formulário de criação de produto
     public static function rulesForStore(): array
     {
         return [
@@ -54,6 +55,7 @@ final class ProductValidator
         ];
     }
 
+    // Adição via formulário de edição de produto
     public static function rulesForUpdate(int $productId): array
     {
         return [
@@ -70,4 +72,21 @@ final class ProductValidator
         ];
     }
 
+    // Adição via galeria de produto
+    public static function galleryUpload(): array
+    {
+        return [
+            'photos'   => ['required','array'],
+            'photos.*' => ['file','mimes:jpg,jpeg,png,webp','max:16384'],
+        ];
+    }
+
+    // Remoção via galeria de produto
+    public static function galleryDelete(): array
+    {
+        return [
+            'indexes'   => ['required','array','min:1'],
+            'indexes.*' => ['integer','min:0'],
+        ];
+    }
 }

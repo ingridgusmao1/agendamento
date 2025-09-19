@@ -158,4 +158,19 @@ class ProductService
         $only  = preg_replace('/[^A-Za-z0-9]+/', '', $ascii) ?: '';
         return strtoupper($only);
     }
+
+    /** Adição de fotos via galeria */
+    public function addPhotos(Product $product, Request $request): int
+    {
+        $files = $this->gatherFiles($request);
+        $saved = $this->savePhotos($product, $files);
+
+        if ($saved) {
+            $merged = array_slice(array_merge($product->photo_path ?? [], $saved), 0, 10);
+            $product->photo_path = $merged;
+            $product->save();
+        }
+        return count($saved);
+    }
+
 }
