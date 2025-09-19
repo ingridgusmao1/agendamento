@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class Product extends Model
 {
@@ -16,16 +17,17 @@ class Product extends Model
 
     protected $casts = [
         'price'       => 'float',
-        'complements' => 'array', // sempre salva/recupera como JSON array
+        'complements' => 'array',
+        'photo_path'  => 'array',
     ];
 
     /* ----------------- MUTATOR: SEMPRE SALVA COMO ARRAY JSON ----------------- */
     public function setComplementsAttribute($value): void
     {
-        $this->attributes['complements'] = json_encode($this->normalizeToArray($value));
-        // Como o cast é "array", também funcionaria atribuir o array direto:
-        // $this->attributes['complements'] = $this->normalizeToArray($value);
-        // (use apenas um dos dois; eu usei json_encode para deixar explícito)
+        // REMOVIDO o acesso direto a $this->attributes.
+        // Mantido por compatibilidade com seu comentário, mas sem efeito.
+        // Use o mutator moderno abaixo (complements()) para normalizar.
+        // (intencionalmente vazio)
     }
 
     /* --------------- ACCESSOR: TEXTO PARA A UI ("a; b; c") ------------------ */
@@ -56,7 +58,49 @@ class Product extends Model
         return $parts;
     }
 
-    /* seus relacionamentos */
-    public function items() { return $this->hasMany(SaleItem::class, 'product_id'); }
-    public function saleItems() { return $this->hasMany(SaleItem::class, 'product_id'); }
+    public function items()
+    {
+        return $this->hasMany(SaleItem::class, 'product_id');
+    }
+
+    public function saleItems()
+    {
+        return $this->hasMany(SaleItem::class, 'product_id');
+    }
+
+    protected function photoPath(): Attribute
+    {
+        // Blindagem: garante SEMPRE array.
+        // - null/'' => []
+        // - string JSON válida => decodifica
+        // - string simples => [string]
+        // - array => normaliza e remove vazios
+        return Attribute::make(
+            get: function ($value) {
+                if (is_array($value)) {
+                    return array_values(array_filter($value, fn ($v) => (string)$v !== ''));
+                }
+                if ($value === null || $value === '') {
+                    return [];
+                }
+                if (is_string($value)) {
+                    $decoded = json_decode($value, true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                        return array_values(array_filter($decoded, fn ($v) => (string)$v !== ''));
+                    }
+                    return [$value];
+                }
+                return [];
+            }
+        );
+    }
+
+    // Mutator moderno para COMPLEMENTS: normaliza e deixa o CAST serializar.
+    protected function complements(): Attribute
+    {
+        return Attribute::make(
+            set: fn ($value) => $this->normalizeToArray($value)
+            // get() não é necessário: o cast 'array' já decodifica do JSON
+        );
+    }
 }

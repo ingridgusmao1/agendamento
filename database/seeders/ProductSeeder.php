@@ -31,12 +31,12 @@ class ProductSeeder extends Seeder
             Product::updateOrCreate(
                 ['name'=>$p['name'],'model'=>$p['model']],
                 [
-                    'color'=>$p['color'],
-                    'size'=>$p['size'],
-                    'price'=>$p['price'],
-                    'notes'=>$p['notes'],
-                    'complements'=>$p['complements'],
-                    'photo_path'=>null,
+                    'color'       => $p['color'],
+                    'size'        => $p['size'],
+                    'price'       => $p['price'],
+                    'notes'       => $p['notes'],
+                    'complements' => $p['complements'] ?? [],
+                    'photo_path'  => [],
                 ]
             );
         }

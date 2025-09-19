@@ -17,12 +17,13 @@
     <table class="table align-middle mb-0 pm-table">
       <thead class="table-light">
         <tr>
+          <th></th>
           <th>{{ __('global.name') }}</th>
           <th>{{ __('global.model') }}</th>
           <th>{{ __('global.color') }}</th>
           <th>{{ __('global.size') }}</th>
           <th class="text-end">{{ __('global.price') }}</th>
-          <th class="text-end">{{ __('global.actions') }}</th>
+          <th class="text-center">{{ __('global.actions') }}</th>
         </tr>
       </thead>
       <tbody id="products-tbody">
@@ -47,7 +48,7 @@
 {{-- Modal Criar Produto --}}
 <div class="modal fade" id="modalCreate" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
-    <form class="modal-content pm-form" method="POST" action="{{ route('admin.products.store') }}">
+    <form class="modal-content pm-form" method="POST" action="{{ route('admin.products.store') }}" enctype="multipart/form-data">
       @csrf
       <div class="modal-header">
         <h5 class="modal-title">{{ __('global.new_product') }}</h5>
@@ -81,7 +82,8 @@
           </div>
           <div class="col-12">
             <label class="form-label">{{ __('global.photo') }}</label>
-            <input name="photo_path" class="form-control pm-input">
+            <input name="photos[]" type="file" class="form-control pm-input" accept="image/*" multiple>
+            <small class="text-muted">{{ __('global.photo_caption') }}</small>
           </div>
           <div class="col-12">
             <label class="form-label">{{ __('global.complementary_info') }}</label>
@@ -100,7 +102,7 @@
 {{-- Modal Editar Produto --}}
 <div class="modal fade" id="modalEdit" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
-    <form class="modal-content pm-form" method="POST" id="formEditProduct">
+    <form class="modal-content pm-form" method="POST" id="formEditProduct" enctype="multipart/form-data">
       @csrf @method('PUT')
       <div class="modal-header">
         <h5 class="modal-title">{{ __('global.edit_product') }}</h5>
@@ -134,7 +136,8 @@
           </div>
           <div class="col-12">
             <label class="form-label">{{ __('global.photo') }}</label>
-            <input name="photo_path" id="editPhoto" class="form-control pm-input">
+            <input name="photos[]" type="file" class="form-control pm-input" accept="image/*" multiple>
+            <small class="text-muted">{{ __('global.photo_caption') }}</small>
           </div>
           <div class="col-12">
             <label class="form-label">{{ __('global.complementary_info') }}</label>
@@ -153,16 +156,52 @@
 
 @push('scripts')
 <script>
+document.addEventListener('click', function (ev) {
+  const btn = ev.target.closest('.btn-edit-product');
+  if (!btn) return;
+
+  const modalEl = document.getElementById('modalEdit');
+  if (!modalEl) return;
+
+  const formEl        = modalEl.querySelector('#formEditProduct');
+  const inputName     = modalEl.querySelector('#editName');
+  const inputModel    = modalEl.querySelector('#editModel');
+  const inputColor    = modalEl.querySelector('#editColor');
+  const inputSize     = modalEl.querySelector('#editSize');
+  const inputPrice    = modalEl.querySelector('#editPrice');
+  const textareaNotes = modalEl.querySelector('#editNotes');
+  const textareaComp  = modalEl.querySelector('#editComplements');
+
+  formEl.setAttribute('action', btn.dataset.updateUrl);
+
+  inputName.value     = btn.dataset.name ?? '';
+  inputModel.value    = btn.dataset.model ?? '';
+  inputColor.value    = btn.dataset.color ?? '';
+  inputSize.value     = btn.dataset.size ?? '';
+  inputPrice.value    = btn.dataset.price ?? '';
+  textareaNotes.value = btn.dataset.notes ?? '';
+  textareaComp.value  = btn.dataset.complements ?? '';
+
+  const photosInput = modalEl.querySelector('input[name="photos[]"]');
+  if (photosInput) photosInput.value = '';
+});
+
 (function(){
   let page = 1;
 
   const $q        = document.querySelector('input[name="q"]');
+  const $per      = document.querySelector('[name="per_page"]'); // opcional
   const $tbody    = document.getElementById('products-tbody');
   const $btnPrev  = document.getElementById('btnPrevP');
   const $btnNext  = document.getElementById('btnNextP');
   const $range    = document.getElementById('products-range');
   const urlFetch  = @json(route('admin.products.fetch'));
   const confirmDeleteMsg = @json(__('global.exclude_this_product'));
+
+  function currentPerPage(){
+    const v = $per ? parseInt($per.value, 10) : 20;
+    return Number.isFinite(v) ? Math.max(5, Math.min(100, v)) : 20;
+  }
 
   function initTooltips(){
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
@@ -177,24 +216,52 @@
   }
 
   function updateRange(meta){
-    const start = meta.total === 0 ? 0 : ((meta.page - 1) * meta.perPage + 1);
-    const end   = Math.min(meta.page * meta.perPage, meta.total);
-    $range.textContent = `${start}–${end} / ${meta.total}`;
+    const per = meta.per_page ?? meta.perPage ?? currentPerPage();
+    const start = meta.total === 0 ? 0 : ((meta.page - 1) * per + 1);
+    const end   = Math.min(meta.page * per, meta.total);
+    if ($range) $range.textContent = `${start}–${end} / ${meta.total}`;
+  }
+
+  function updatePager(meta){
+    // backend fornece hasPrev/hasNext; se não vier, derive
+    const hasPrev = ('hasPrev' in meta) ? !!meta.hasPrev : (meta.page > 1);
+    const hasNext = ('hasNext' in meta) ? !!meta.hasNext : !!meta.hasMore;
+    if ($btnPrev) $btnPrev.disabled = !hasPrev;
+    if ($btnNext) $btnNext.disabled = !hasNext;
+  }
+
+  function safeRender(meta){
+    if ($tbody) $tbody.innerHTML = meta.html || '';
+    updatePager(meta);
+    updateRange(meta);
+    initTooltips();
+    wireDeleteConfirm();
   }
 
   function load(){
-    const params = new URLSearchParams({ q: $q.value || '', page: String(page) });
+    const params = new URLSearchParams({
+      q: $q?.value || '',
+      page: String(page),
+      per_page: String(currentPerPage()),
+    });
     fetch(`${urlFetch}?${params.toString()}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-      .then(r => r.json())
-      .then(meta => {
-        $tbody.innerHTML  = meta.html;
-        $btnPrev.disabled = !meta.hasPrev;
-        $btnNext.disabled = !meta.hasNext;
-        updateRange(meta);
-        initTooltips();
-        wireDeleteConfirm();
+      .then(async r => {
+        const ok = r.ok;
+        const data = await r.json().catch(() => null);
+        if (!ok || !data) {
+          if ($tbody) $tbody.innerHTML = '';
+          updatePager({ page, hasNext:false, hasPrev:false });
+          if ($range) $range.textContent = '—';
+          return;
+        }
+        safeRender(data);
       })
-      .catch(console.error);
+      .catch(err => {
+        console.error(err);
+        if ($tbody) $tbody.innerHTML = '';
+        updatePager({ page, hasNext:false, hasPrev:false });
+        if ($range) $range.textContent = '—';
+      });
   }
 
   $btnPrev?.addEventListener('click', function(){ if (page > 1){ page--; load(); } });
@@ -207,27 +274,18 @@
     t = setTimeout(load, 300);
   });
 
-  // Abrir modal Editar (preenche com data-attrs da linha)
-  document.addEventListener('click', function(e){
-    const btnEdit = e.target.closest('.btn-edit-product');
-    if (!btnEdit) return;
-
-    const id    = btnEdit.getAttribute('data-id');
-    document.getElementById('editName').value        = btnEdit.getAttribute('data-name')  ?? '';
-    document.getElementById('editModel').value       = btnEdit.getAttribute('data-model') ?? '';
-    document.getElementById('editColor').value       = btnEdit.getAttribute('data-color') ?? '';
-    document.getElementById('editSize').value        = btnEdit.getAttribute('data-size')  ?? '';
-    document.getElementById('editPrice').value       = btnEdit.getAttribute('data-price') ?? '';
-    document.getElementById('editNotes').value       = btnEdit.getAttribute('data-notes') ?? '';
-    document.getElementById('editPhoto').value       = btnEdit.getAttribute('data-photo') ?? '';
-    document.getElementById('editComplements').value = btnEdit.getAttribute('data-complements') ?? '';
-
-    document.getElementById('formEditProduct').setAttribute('action', '/admin/products/' + id);
-
-    new bootstrap.Modal(document.getElementById('modalEdit')).show();
+  // quando mudar o per_page (se existir), volta para página 1
+  $per?.addEventListener('change', function(){
+    page = 1;
+    load();
   });
 
-  document.addEventListener('DOMContentLoaded', load);
+  // primeira carga
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', load);
+  } else {
+    load();
+  }
 })();
 </script>
 @endpush

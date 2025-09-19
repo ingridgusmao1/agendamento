@@ -3,22 +3,29 @@
 namespace App\Http\Services;
 
 use App\Models\Product;
+use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Contracts\View\Factory as ViewFactory;
 
 class ProductService
 {
     public function __construct(private ViewFactory $view) {}
 
+    /** Listagem com paginação server-side para o fetch AJAX */
     public function fetch(string $q, int $page, int $perPage): array
     {
         $query = Product::query()
             ->when($q !== '', function ($w) use ($q) {
-                $w->where(function ($x) use ($q) {
-                    $like = "%{$q}%";
-                    $x->where('name',  'like', $like)
-                      ->orWhere('model','like', $like)
-                      ->orWhere('color','like', $like)
-                      ->orWhere('size',  'like', $like);
+                $like = "%{$q}%";
+                $w->where(function ($x) use ($like) {
+                    $x->where('name', 'like', $like)
+                      ->orWhere('model', 'like', $like)
+                      ->orWhere('color', 'like', $like)
+                      ->orWhere('size', 'like', $like);
                 });
             })
             ->orderBy('name');
@@ -30,30 +37,140 @@ class ProductService
 
         return [
             'html'    => $html,
+            'total'   => $total,
             'page'    => $page,
             'perPage' => $perPage,
-            'total'   => $total,
-            'hasPrev' => $page > 1,
-            'hasNext' => ($page * $perPage) < $total,
+            'hasMore' => ($page * $perPage) < $total,
         ];
     }
 
-    /** Criação – o mutator do Model garante JSON array em complements */
-    public function create(array $data): Product
+    /** Cria produto + salva fotos (se enviadas) */
+    public function store(Request $request): Product
     {
-        return Product::create($data);
+        return DB::transaction(function () use ($request) {
+            $data = $request->only(['name','model','color','size','price','notes','complements']);
+            /** @var Product $product */
+            $product = Product::create($data);
+
+            $files = $this->gatherFiles($request);
+            $saved = $this->savePhotos($product, $files);
+
+            if ($saved) {
+                $merged = array_slice(array_merge($product->photo_path ?? [], $saved), 0, 10);
+                $product->photo_path = $merged;
+                $product->save();
+            }
+
+            return $product;
+        });
     }
 
-    /** Atualização – idem */
-    public function update(Product $product, array $data): void
+    /** Atualiza produto + adiciona fotos (se enviadas) */
+    public function update(Product $product, Request $request): Product
     {
-        $product->update($data);
+        return DB::transaction(function () use ($product, $request) {
+            $data = $request->only(['name','model','color','size','price','notes','complements']);
+            $product->fill($data)->save();
+
+            $files = $this->gatherFiles($request);
+            $saved = $this->savePhotos($product, $files);
+
+            if ($saved) {
+                $merged = array_slice(array_merge($product->photo_path ?? [], $saved), 0, 10);
+                $product->photo_path = $merged;
+                $product->save();
+            }
+
+            return $product;
+        });
     }
 
-    public function archive(Product $product): void
+    /** Remove imagens por índice (0-based) ou por caminho */
+    public function removeImages(Product $product, array $indexesOrPaths): void
     {
-        if (!$product->trashed()) {
-            $product->delete();
+        $current = $product->photo_path ?? [];
+        if (!$current) return;
+
+        $toKeep = [];
+        foreach ($current as $idx => $path) {
+            $matchByIndex = in_array($idx, $indexesOrPaths, true);
+            $matchByPath  = in_array($path, $indexesOrPaths, true);
+            if ($matchByIndex || $matchByPath) {
+                Storage::disk('public')->delete($path);
+                Log::info('Deleted product photo', ['product_id' => $product->id, 'path' => $path]);
+            } else {
+                $toKeep[] = $path;
+            }
         }
+
+        $product->photo_path = array_values($toKeep);
+        $product->save();
     }
+
+    /** Coleta robusta de arquivos do input photos[] */
+    private function gatherFiles(Request $request): array
+    {
+        $files = $request->file('photos');
+
+        if ($files === null) {
+            Log::debug('No files on request (photos is null)');
+            return [];
+        }
+        if ($files instanceof UploadedFile) {
+            return [$files];
+        }
+        if (is_array($files)) {
+            return array_values(array_filter($files, fn($f) => $f instanceof UploadedFile));
+        }
+        return [];
+    }
+
+    /** Salva arquivos no disk public/products com nome: {ID}{NOMESEMACESNTOSMAIUSCULO}{#}.{ext} */
+    private function savePhotos(Product $product, array $files): array
+    {
+        $saved = [];
+        if (!$files) return $saved;
+
+        $baseName = $this->slugUpper($product->name);
+        $current  = $product->photo_path ?? [];
+        $nextNum  = count($current) + 1;
+
+        foreach ($files as $i => $file) {
+            // respeita limite de 10 no total
+            if (count($current) + count($saved) >= 10) break;
+
+            $ext  = strtolower($file->getClientOriginalExtension() ?: 'jpg');
+            $num  = $nextNum + $i;
+            $name = "{$product->id}{$baseName}{$num}.{$ext}";
+            $path = $file->storeAs('products', $name, 'public');
+
+            Log::info('Saved product photo', ['product_id' => $product->id, 'file' => $name, 'path' => $path]);
+            $saved[] = $path;
+        }
+
+        return $saved;
+    }
+
+    /** Remove acentos/espacos, deixa alfanumérico e MAIÚSCULO */
+    private function slugUpper(string $name): string
+    {
+        $ascii = Str::ascii($name);
+        $only  = preg_replace('/[^A-Za-z0-9]+/', '', $ascii) ?: '';
+        return strtoupper($only);
+    }
+
+    /** Adição de fotos via galeria */
+    public function addPhotos(Product $product, Request $request): int
+    {
+        $files = $this->gatherFiles($request);
+        $saved = $this->savePhotos($product, $files);
+
+        if ($saved) {
+            $merged = array_slice(array_merge($product->photo_path ?? [], $saved), 0, 10);
+            $product->photo_path = $merged;
+            $product->save();
+        }
+        return count($saved);
+    }
+
 }

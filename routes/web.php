@@ -44,4 +44,22 @@ Route::prefix('admin')->middleware(['auth','ensure.usertype:admin'])->name('admi
 
     // Paginação de usuários
     Route::get('/users/fetch', [UserAdminController::class, 'fetch'])->name('users.fetch');
+
+    //------------------------------------------------------------------------------------------------------------------------
+
+    // Galeria
+    Route::get('products/{product}/gallery', [ProductAdminController::class, 'gallery'])->name('products.gallery');
+    Route::get('products/{product}/images', [ProductAdminController::class, 'images'])->name('products.images');
+    Route::post('products/{product}/images', [ProductAdminController::class, 'uploadImages'])->name('products.images.upload');
+    Route::delete('products/{product}/images/{index}', [ProductAdminController::class, 'deleteImage'])->name('products.images.delete');
+
+    // Upload (usa 'photos[]' no request, conforme o validator)
+    Route::post('products/{product}/images', [ProductAdminController::class, 'uploadImages'])->name('products.images.upload');
+
+    // Remoção em lote (sem {index})
+    Route::delete('products/{product}/images', [ProductAdminController::class, 'deleteImagesBatch'])->name('products.images.batchDelete');
+
+    // (Opcional) manter a remoção por índice individual, se ainda usar em algum lugar:
+    Route::delete('products/{product}/images/{index}', [ProductAdminController::class, 'deleteImage'])->name('products.images.delete');
+
 });
