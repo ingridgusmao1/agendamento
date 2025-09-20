@@ -5,6 +5,7 @@ use App\Http\Controllers\Web\AuthWebController;
 use App\Http\Controllers\Admin\ProductAdminController;
 use App\Http\Controllers\Admin\UserAdminController;
 use App\Http\Controllers\Admin\CustomerAdminController;
+use App\Http\Controllers\Admin\SaleAdminController;
 
 Route::get('/', fn() => redirect()->route('admin.dashboard'));
 
@@ -71,4 +72,13 @@ Route::prefix('admin')->middleware(['auth','ensure.usertype:admin'])->name('admi
     Route::post('/customers',       [CustomerAdminController::class, 'store'])->name('customers.store');
     Route::put('/customers/{customer}', [CustomerAdminController::class, 'update'])->name('customers.update');
     Route::delete('/customers/{customer}', [CustomerAdminController::class, 'destroy'])->name('customers.destroy');
+
+    //------------------------------------------------------------------------------------------------------------------------
+
+    // Notas de venda
+    Route::get('/sales',               [SaleAdminController::class, 'index'])->name('sales.index');
+    Route::get('/sales/fetch',         [SaleAdminController::class, 'fetch'])->name('sales.fetch');
+    Route::get('/sales/{sale}',        [SaleAdminController::class, 'show'])->name('sales.show');
+    Route::delete('/sales/{sale}',     [SaleAdminController::class, 'destroy'])->name('sales.destroy');
+
 });
