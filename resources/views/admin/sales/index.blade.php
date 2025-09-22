@@ -9,6 +9,7 @@
   <div class="alert alert-danger">{{ session('err') }}</div>
 @endif
 
+{{-- Filtros (busca + status) – sem paginação aqui em cima --}}
 <div class="d-flex mb-3 align-items-center gap-2">
   <input type="text" name="q" class="form-control" placeholder="{{ __('global.search_sale_placeholder') }}" autocomplete="off">
   <select id="filterStatus" class="form-select" style="width:auto">
@@ -17,15 +18,6 @@
     <option value="atrasado">{{ __('global.late') }}</option>
     <option value="fechado">{{ __('global.closed') }}</option>
   </select>
-  <div class="ms-auto d-flex align-items-center gap-2">
-    <label class="text-muted small">{{ __('global.per_page') }}</label>
-    <select id="perPage" class="form-select form-select-sm" style="width:auto">
-      <option>15</option><option>25</option><option>50</option><option>100</option>
-    </select>
-    <span id="range" class="text-muted small">0–0 / 0</span>
-    <button id="btnPrevP" class="btn pm-btn pm-btn-outline-secondary btn-sm" disabled>&larr; {{ __('global.previous') }}</button>
-    <button id="btnNextP" class="btn pm-btn pm-btn-outline-secondary btn-sm" disabled>{{ __('global.next') }} &rarr;</button>
-  </div>
 </div>
 
 <div class="card shadow-sm pm-card">
@@ -42,12 +34,35 @@
           <th class="text-end" style="width:150px">{{ __('global.actions') }}</th>
         </tr>
       </thead>
-      <tbody id="tbodyRows"><tr><td colspan="7" class="text-center text-muted">...</td></tr></tbody>
+      <tbody id="tbodyRows">
+        <tr><td colspan="7" class="text-center text-muted">...</td></tr>
+      </tbody>
     </table>
+  </div>
+
+  {{-- >>> Rodapé com Itens por página + Range + Prev/Next (movido para baixo) <<< --}}
+  <div class="card-footer bg-white">
+    <div class="row g-2 align-items-center">
+      <div class="col-12 col-md-4">
+        <label class="text-muted small">{{ __('global.per_page') }}</label>
+        <select id="perPage" class="form-select form-select-sm w-auto d-inline-block ms-2" style="width:auto">
+          <option>15</option><option>25</option><option>50</option><option>100</option>
+        </select>
+      </div>
+      <div class="col-12 col-md-4 text-center">
+        <span id="range" class="text-muted small">0–0 / 0</span>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="d-flex justify-content-md-end gap-2">
+          <button id="btnPrevP" class="btn pm-btn pm-btn-outline-secondary btn-sm" disabled>&larr; {{ __('global.previous') }}</button>
+          <button id="btnNextP" class="btn pm-btn pm-btn-outline-secondary btn-sm" disabled>{{ __('global.next') }} &rarr;</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
-{{-- Modal Detalhes --}}
+{{-- Modal Detalhes (preenchido via AJAX) --}}
 <div class="modal fade" id="modalDetails" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
@@ -55,9 +70,7 @@
         <h5 class="modal-title">{{ __('global.sale_details') }}</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('global.close') }}"></button>
       </div>
-      <div class="modal-body" id="detailsBody">
-        <!-- preenchido via AJAX -->
-      </div>
+      <div class="modal-body" id="detailsBody"><!-- preenchido via AJAX --></div>
     </div>
   </div>
 </div>
@@ -66,13 +79,13 @@
 @push('scripts')
 <script>
 (function(){
-  const $q     = document.querySelector('input[name="q"]');
-  const $per   = document.getElementById('perPage');
-  const $tbody = document.getElementById('tbodyRows');
-  const $btnPrev = document.getElementById('btnPrevP');
-  const $btnNext = document.getElementById('btnNextP');
-  const $range   = document.getElementById('range');
-  const $status  = document.getElementById('filterStatus');
+  const $q      = document.querySelector('input[name="q"]');
+  const $per    = document.getElementById('perPage');
+  const $tbody  = document.getElementById('tbodyRows');
+  const $btnPrev= document.getElementById('btnPrevP');
+  const $btnNext= document.getElementById('btnNextP');
+  const $range  = document.getElementById('range');
+  const $status = document.getElementById('filterStatus');
   let page = 1;
 
   async function load(){
@@ -82,6 +95,7 @@
     params.set('page', page);
     params.set('per_page', $per.value);
 
+    // mantém a rota original
     const url = "{{ route('admin.sales.fetch') }}?" + params.toString();
     const resp = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
     const meta = await resp.json();
@@ -99,6 +113,7 @@
     $btnPrev.disabled = !hasPrev;
     $btnNext.disabled = !hasNext;
   }
+
   function updateRange(meta){
     const start = (meta.total === 0) ? 0 : ((meta.page - 1) * meta.perPage + 1);
     const end   = Math.min(meta.page * meta.perPage, meta.total);
@@ -118,8 +133,8 @@
     });
   }
 
-  $q.addEventListener('input', () => { page = 1; load(); });
-  $per.addEventListener('change', () => { page = 1; load(); });
+  $q.addEventListener('input',   () => { page = 1; load(); });
+  $per.addEventListener('change',() => { page = 1; load(); });
   $status.addEventListener('change', () => { page = 1; load(); });
   $btnPrev.addEventListener('click', () => { if (page > 1){ page--; load(); } });
   $btnNext.addEventListener('click', () => { page++; load(); });

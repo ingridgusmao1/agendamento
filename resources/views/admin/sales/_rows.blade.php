@@ -49,16 +49,17 @@
       <i class="bi bi-eye"></i>
     </button>
 
-    <form method="POST" action="{{ route('admin.sales.destroy', $s) }}" class="d-inline delete-form">
-      @csrf @method('DELETE')
-      @php $canDelete = ($s->status === 'fechado'); @endphp
-      <button class="btn btn-sm pm-btn pm-btn-primary"
-              @unless($canDelete) disabled @endunless
-              data-bs-toggle="tooltip"
-              title="{{ $canDelete ? __('global.delete') : __('global.sale_cannot_delete_status') }}">
-        <i class="bi bi-trash"></i>
-      </button>
-    </form>
+    @php $canDelete = ($s->status === 'fechado'); @endphp
+    @if($canDelete)
+      <form method="POST" action="{{ route('admin.sales.destroy', $s) }}" class="d-inline delete-form">
+        @csrf @method('DELETE')
+        <button class="btn btn-sm pm-btn pm-btn-primary"
+                data-bs-toggle="tooltip"
+                title="{{ __('global.delete') }}">
+          <i class="bi bi-trash"></i>
+        </button>
+      </form>
+    @endif
   </td>
 </tr>
 @empty
