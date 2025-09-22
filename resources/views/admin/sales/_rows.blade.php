@@ -15,8 +15,6 @@
   $custAvatar = $cust && $cust->avatar_path ? asset($cust->avatar_path) : 'https://via.placeholder.com/120?text=Avatar';
 @endphp
 <tr>
-  <td>#{{ $s->id }}</td>
-
   {{-- avatar do cliente --}}
   <td>
     <img src="{{ $custAvatar }}" class="img-thumbnail" style="width:80px;height:80px;object-fit:cover;" alt="avatar">

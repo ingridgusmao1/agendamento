@@ -145,5 +145,8 @@ return [
     'no_data' => 'Sem dados.',
     'previous' => 'Anterior',
     'sales_caption' => 'Gerencie suas notas de vendas',
-    'open_sale' => 'em aberto',
+    'open_sale_dropdown' => 'Em aberto',
+    'late_dropdown' => 'Atrasado',
+    'closed_dropdown' => 'Fechado',
+    'register_date' => 'Registrado',
 ];

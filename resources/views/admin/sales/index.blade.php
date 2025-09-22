@@ -14,9 +14,9 @@
   <input type="text" name="q" class="form-control" placeholder="{{ __('global.search_sale_placeholder') }}" autocomplete="off">
   <select id="filterStatus" class="form-select" style="width:auto">
     <option value="">{{ __('global.all_status') }}</option>
-    <option value="aberto">{{ __('global.open_sale') }}</option>
-    <option value="atrasado">{{ __('global.late') }}</option>
-    <option value="fechado">{{ __('global.closed') }}</option>
+    <option value="aberto">{{ __('global.open_sale_dropdown') }}</option>
+    <option value="atrasado">{{ __('global.late_dropdown') }}</option>
+    <option value="fechado">{{ __('global.closed_dropdown') }}</option>
   </select>
 </div>
 
@@ -25,12 +25,11 @@
     <table class="table align-middle mb-0">
       <thead>
         <tr>
-          <th style="width:80px">#</th>
-          <th style="width:120px">{{ __('global.customer') }}</th>
+          <th style="width:120px"></th>
           <th>{{ __('global.customer_name') }}</th>
           <th>{{ __('global.status') }}</th>
           <th class="text-end">{{ __('global.total') }}</th>
-          <th style="width:160px">{{ __('global.created_at') }}</th>
+          <th style="width:160px">{{ __('global.register_date') }}</th>
           <th class="text-end" style="width:150px">{{ __('global.actions') }}</th>
         </tr>
       </thead>
