@@ -78,6 +78,16 @@
 @push('scripts')
 <script>
 (function(){
+  // Shim seguro: cria initTooltips() se não existir
+  window.initTooltips ??= function(){
+    if (!window.bootstrap || !bootstrap.Tooltip) return;
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
+      // (opcional) reaplica sem vazar instâncias
+      if (el._tooltipInstance) { el._tooltipInstance.dispose(); }
+      el._tooltipInstance = new bootstrap.Tooltip(el);
+    });
+  };
+
   const $q      = document.querySelector('input[name="q"]');
   const $per    = document.getElementById('perPage');
   const $tbody  = document.getElementById('tbodyRows');
