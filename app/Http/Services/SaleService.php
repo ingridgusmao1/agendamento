@@ -57,16 +57,18 @@ class SaleService {
     /**
      * Carrega dados completos para o "Detalhes"
      */
-    public function details(Sale $sale): string
+    public function details(\App\Models\Sale $sale): string
     {
-        $sale->load([
-            'customer:id,name,avatar_path,city,district,street,number,cpf,phone',
-            'items.product:id,name,photo_path,type', // ajuste os campos conforme seu Product
-            'installments',                           // App\Models\Installment
-            'payments',                               // App\Models\Payment
+        $sale->loadMissing([
+            'customer',               // id, name, avatar_path, etc.
+            'items.product',          // produto usado nas linhas
+            'installments.payments',  // pagamentos via parcelas
+            'payments',               // atalho agregado (hasManyThrough)
         ]);
 
-        return $this->view->make('admin.sales._details', ['sale' => $sale])->render();
+        return $this->view
+            ->make('admin.sales._details', ['sale' => $sale])
+            ->render();
     }
 
     public static function createInstallments(Sale $sale): void

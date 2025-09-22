@@ -54,7 +54,7 @@ return [
     'search_by_name_or_code' => 'Buscar por nome ou código',
     'prev' => 'Voltar',
     'next' => 'Avançar',
-    'photo'=> 'Imagen(s) do produto',
+    'photo' => 'Imagen(s) do produto',
     'complementary_info' => 'Informações complementares',
     'product_created' => 'Produto criado',
     'product_updated' => 'Produto atualizado',
@@ -149,4 +149,8 @@ return [
     'late_dropdown' => 'Atrasado',
     'closed_dropdown' => 'Fechado',
     'register_date' => 'Registrado',
+    'items_total' => 'Total de Itens',
+    'payments_total' => 'Total de Pagamentos',
+    'balance' => 'Saldo',
+    'paid_at' => 'Pago em',
 ];

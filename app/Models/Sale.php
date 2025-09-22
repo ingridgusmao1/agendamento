@@ -47,7 +47,7 @@ class Sale extends Model
 
     public function installments()
     {
-        return $this->hasMany(Installment::class)->orderBy('number');
+        return $this->hasMany(Installment::class, 'sale_id', 'id');
     }
 
     public function photos()
@@ -56,8 +56,15 @@ class Sale extends Model
     }
 
     public function payments()
-    { 
-        return $this->hasMany(Payment::class);
+    {
+        return $this->hasManyThrough(
+            Payment::class,      // related
+            Installment::class,  // through
+            'sale_id',       // Foreign key on installments referencing sales
+            'installment_id',// Foreign key on payments referencing installments
+            'id',            // Local key on sales
+            'id'             // Local key on installments
+        );
     }
 
     public function remainingBalance(): float

@@ -20,6 +20,13 @@ class Installment extends Model
         'paid_total'=> 'float',
     ];
 
-    public function sale(){ return $this->belongsTo(Sale::class); }
-    public function payments(){ return $this->hasMany(Payment::class); }
+    public function sale()
+    {
+        return $this->belongsTo(Sale::class, 'sale_id', 'id');
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class, 'installment_id', 'id');
+    }
 }
