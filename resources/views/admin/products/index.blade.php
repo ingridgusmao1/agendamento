@@ -1,3 +1,4 @@
+@php use Illuminate\Support\Facades\Storage; @endphp
 @extends('layouts.admin')
 @section('title', __('global.products'))
 
@@ -27,7 +28,7 @@
         </tr>
       </thead>
       <tbody id="products-tbody">
-        {{-- carregado via AJAX --}}
+        {{-- carregado via AJAX (admin.products.fetch -> view admin.products._rows) --}}
       </tbody>
     </table>
   </div>
@@ -190,7 +191,7 @@ document.addEventListener('click', function (ev) {
   let page = 1;
 
   const $q        = document.querySelector('input[name="q"]');
-  const $per      = document.querySelector('[name="per_page"]'); // opcional
+  const $per      = document.querySelector('[name="per_page"]'); // se existir no seu layout
   const $tbody    = document.getElementById('products-tbody');
   const $btnPrev  = document.getElementById('btnPrevP');
   const $btnNext  = document.getElementById('btnNextP');
@@ -223,7 +224,6 @@ document.addEventListener('click', function (ev) {
   }
 
   function updatePager(meta){
-    // backend fornece hasPrev/hasNext; se não vier, derive
     const hasPrev = ('hasPrev' in meta) ? !!meta.hasPrev : (meta.page > 1);
     const hasNext = ('hasNext' in meta) ? !!meta.hasNext : !!meta.hasMore;
     if ($btnPrev) $btnPrev.disabled = !hasPrev;
@@ -234,7 +234,10 @@ document.addEventListener('click', function (ev) {
     if ($tbody) $tbody.innerHTML = meta.html || '';
     updatePager(meta);
     updateRange(meta);
-    initTooltips();
+    if (typeof window.initTooltips !== 'function') {
+      window.initTooltips = function(){};
+    }
+    window.initTooltips();
     wireDeleteConfirm();
   }
 
@@ -256,8 +259,7 @@ document.addEventListener('click', function (ev) {
         }
         safeRender(data);
       })
-      .catch(err => {
-        console.error(err);
+      .catch(() => {
         if ($tbody) $tbody.innerHTML = '';
         updatePager({ page, hasNext:false, hasPrev:false });
         if ($range) $range.textContent = '—';
@@ -274,13 +276,11 @@ document.addEventListener('click', function (ev) {
     t = setTimeout(load, 300);
   });
 
-  // quando mudar o per_page (se existir), volta para página 1
   $per?.addEventListener('change', function(){
     page = 1;
     load();
   });
 
-  // primeira carga
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', load);
   } else {

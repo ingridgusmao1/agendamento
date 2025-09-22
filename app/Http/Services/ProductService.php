@@ -10,38 +10,29 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Contracts\View\Factory as ViewFactory;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
 
 class ProductService
 {
     public function __construct(private ViewFactory $view) {}
 
     /** Listagem com paginação server-side para o fetch AJAX */
-    public function fetch(string $q, int $page, int $perPage): array
+    public function fetch(array $filters, int $perPage = 20): LengthAwarePaginatorContract
     {
-        $query = Product::query()
-            ->when($q !== '', function ($w) use ($q) {
-                $like = "%{$q}%";
-                $w->where(function ($x) use ($like) {
-                    $x->where('name', 'like', $like)
-                      ->orWhere('model', 'like', $like)
-                      ->orWhere('color', 'like', $like)
-                      ->orWhere('size', 'like', $like);
+        $q = trim((string)($filters['q'] ?? ''));
+
+        return Product::query()
+            ->when($q !== '', function ($qb) use ($q) {
+                $qb->where(function ($w) use ($q) {
+                    $w->where('name', 'like', "%{$q}%")
+                      ->orWhere('model', 'like', "%{$q}%")
+                      ->orWhere('color', 'like', "%{$q}%")
+                      ->orWhere('size',  'like', "%{$q}%");
                 });
             })
-            ->orderBy('name');
-
-        $total = (clone $query)->count();
-        $items = $query->forPage($page, $perPage)->get();
-
-        $html = $this->view->make('admin.products._rows', compact('items'))->render();
-
-        return [
-            'html'    => $html,
-            'total'   => $total,
-            'page'    => $page,
-            'perPage' => $perPage,
-            'hasMore' => ($page * $perPage) < $total,
-        ];
+            ->orderByDesc('id')
+            ->paginate($perPage)
+            ->appends(['q' => $q, 'per_page' => $perPage]);
     }
 
     /** Cria produto + salva fotos (se enviadas) */
