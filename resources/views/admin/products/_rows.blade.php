@@ -42,8 +42,32 @@
   <td>{{ $p->size }}</td>
   <td class="text-end">{{ number_format((float)$p->price, 2, ',', '.') }}</td>
 
+  {{-- Ações --}}
   <td class="text-end">
-    {{-- ... botões/ações como já estavam ... --}}
+    <button
+      type="button"
+      class="btn btn-sm pm-btn pm-btn-dark btn-edit-product"
+      data-id="{{ $p->id }}"
+      data-name="{{ e((string)$p->name) }}"
+      data-model="{{ e((string)$p->model) }}"
+      data-color="{{ e((string)$p->color) }}"
+      data-size="{{ e((string)$p->size) }}"
+      data-price="{{ $p->price }}"
+      data-notes="{{ e((string)$p->notes) }}"
+      data-complements="{{ e($p->complements_text) }}"
+      data-update-url="{{ route('admin.products.update', $p) }}"
+      data-bs-toggle="modal"
+      data-bs-target="#modalEdit"
+      title="{{ __('global.edit') }}">
+      <i class="bi bi-pencil"></i>
+    </button>
+
+    <form method="POST" action="{{ route('admin.products.destroy', $p) }}" class="d-inline delete-form">
+      @csrf @method('DELETE')
+      <button class="btn btn-sm pm-btn pm-btn-primary" data-bs-toggle="tooltip" title="{{ __('global.delete') }}">
+        <i class="bi bi-trash"></i>
+      </button>
+    </form>
   </td>
 </tr>
 @empty
