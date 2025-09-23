@@ -26,51 +26,21 @@ class ProductAdminController extends Controller
         return view('admin.products.index');
     }
 
-    public function fetch(Request $request)
+    public function fetch(Request $request, ProductService $service)
     {
-        try {
-            $q    = (string) $request->query('q', '');
-            $page = max(1, (int) $request->query('page', 1));
+        $perPage = max(5, min(100, (int)$request->integer('per_page', 20)));
+        $items   = $service->fetch($request->only('q'), $perPage);
 
-            // aceita per_page OU perPage; aplica limites usando as CONSTs
-            $perPage = (int) ($request->query('per_page', $request->query('perPage', self::PER_PAGE_DEFAULT)));
-            $perPage = max(self::PER_PAGE_MIN, min(self::PER_PAGE_MAX, $perPage));
+        $html = view('admin.products._rows', compact('items'))->render();
 
-            $payload = $this->service->fetch($q, $page, $perPage);
-            // $payload esperado: ['html','total','page','perPage','hasMore']
-
-            $respPage    = (int)   ($payload['page']    ?? $page);
-            $respPerPage = (int)   ($payload['perPage'] ?? $perPage);
-            $respTotal   = (int)   ($payload['total']   ?? 0);
-            $hasMore     = (bool)  ($payload['hasMore'] ?? false);
-            $hasPrev     = $respPage > 1;
-            $hasNext     = $hasMore;
-
-            return response()->json([
-                'html'     => $payload['html'] ?? '',
-                'total'    => $respTotal,
-                'page'     => $respPage,
-                'perPage'  => $respPerPage,
-                'per_page' => $respPerPage, // alias para o front
-                'hasMore'  => $hasMore,
-                'hasPrev'  => $hasPrev,
-                'hasNext'  => $hasNext,
-            ]);
-        } catch (\Throwable $e) {
-            \Log::error('Products fetch failed', ['e' => $e]);
-            // Retorna estrutura consistente para o front não quebrar
-            return response()->json([
-                'html'     => view('admin.products._rows', ['items' => collect()])->render(),
-                'total'    => 0,
-                'page'     => 1,
-                'perPage'  => self::PER_PAGE_DEFAULT,
-                'per_page' => self::PER_PAGE_DEFAULT,
-                'hasMore'  => false,
-                'hasPrev'  => false,
-                'hasNext'  => false,
-                'error'    => 'fetch_failed',
-            ], 500);
-        }
+        return response()->json([
+            'html'     => $html,
+            'page'     => $items->currentPage(),
+            'per_page' => $items->perPage(),
+            'total'    => $items->total(),
+            'hasPrev'  => $items->currentPage() > 1,
+            'hasNext'  => $items->hasMorePages(),
+        ]);
     }
 
     public function store(Request $request)

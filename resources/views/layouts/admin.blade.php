@@ -18,7 +18,7 @@
     .navbar-brand { font-weight:600; }
   </style>
 
-  @stack('styles')
+@stack('styles')
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -59,6 +59,7 @@
 
 {{-- nanogallery2 JS --}}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/nanogallery2/3.0.5/jquery.nanogallery2.min.js" referrerpolicy="no-referrer"></script>
+<script>window.initTooltips = window.initTooltips || function(){};</script>
 
 @stack('scripts')
 </body>

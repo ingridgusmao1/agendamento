@@ -1,11 +1,20 @@
+@php
+  $CUSTOMER_AVATAR_PLACEHOLDER = 'data:image/svg+xml;utf8,' . rawurlencode(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240">
+       <rect width="100%" height="100%" fill="#eeeeee"/>
+       <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle"
+             fill="#888888" font-family="Arial, Helvetica, sans-serif" font-size="20">
+         Avatar
+       </text>
+     </svg>'
+  );
+@endphp
+
 @forelse ($items as $c)
 <tr>
-  {{-- Foto (única, não clicável) --}}
   <td style="width:120px">
     @php
-      $src = $c->avatar_path
-        ? asset($c->avatar_path)   // ex.: public/customers/...
-        : 'https://via.placeholder.com/240?text=Avatar';
+      $src = $c->avatar_path ? asset($c->avatar_path) : $CUSTOMER_AVATAR_PLACEHOLDER; // public/customers
     @endphp
     <img src="{{ $src }}" alt="avatar" class="img-thumbnail"
          style="width:120px;height:120px;object-fit:cover;">
@@ -18,9 +27,7 @@
   <td>{{ $c->phone }}</td>
 
   <td class="text-end">
-    <button
-      type="button"
-      class="btn btn-sm pm-btn pm-btn-dark btn-edit-customer"
+    <button type="button" class="btn btn-sm pm-btn pm-btn-dark btn-edit-customer"
       data-id="{{ $c->id }}"
       data-name="{{ e((string)$c->name) }}"
       data-street="{{ e((string)$c->street) }}"
@@ -34,7 +41,7 @@
       data-other_contact="{{ e((string)$c->other_contact) }}"
       data-lat="{{ $c->lat }}"
       data-lng="{{ $c->lng }}"
-      data-avatar="{{ $c->avatar_path ? asset($c->avatar_path) : '' }}"
+      data-avatar="{{ $c->avatar_path ? asset($c->avatar_path) : $CUSTOMER_AVATAR_PLACEHOLDER }}"
       data-bs-toggle="tooltip" title="{{ __('global.edit') }}">
       <i class="bi bi-pencil"></i>
     </button>

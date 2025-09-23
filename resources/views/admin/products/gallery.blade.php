@@ -75,8 +75,16 @@
 <script>
 (function() {
   const fetchUrl = @json(route('admin.products.images', $product));
+  const BASE_STORAGE = @json(asset('storage')); // ex.: http://localhost:8000/storage
 
-  // i18n para JS
+  // helper: "products/ARQ.jpg" -> "http://.../storage/products/ARQ.jpg"
+  function storageUrl(relPath) {
+    if (!relPath) return '';
+    if (/^https?:\/\//i.test(relPath)) return relPath;     // já absoluta
+    if (relPath.startsWith('/storage/')) return relPath;   // já com /storage
+    return BASE_STORAGE.replace(/\/$/, '') + '/' + String(relPath).replace(/^\/+/, '');
+  }
+
   const I18N = {
     MAX_REACHED:        @json(trans('global.max_images_reached')),
     CLICK_TO_ADD:       @json(trans('global.click_to_add_images')),
@@ -86,10 +94,9 @@
     CONFIRM_DELETE:     @json(trans('global.confirm_delete_selected')),
   };
 
-  let maxImages = 10;              // será atualizado pelo backend na primeira carga
-  let currentItems = [];           // [{ID, src, srct, title, kind}]
+  let maxImages = 10;
+  let currentItems = [];
 
-  // Cache de elementos
   const $btnAdd            = $('#btnAdd');
   const $photosInput       = $('#photosInput');
   const $formUpload        = $('#formUpload');
@@ -98,30 +105,37 @@
   const $checkAll          = $('#checkAll');
   const $gal               = $('#product-gallery');
 
-  // Tooltip Bootstrap
   const tooltip = new bootstrap.Tooltip(document.getElementById('btnAdd'));
 
-  // ---------- CARGA / RENDERIZAÇÃO DA GALERIA ----------
   function refreshGallery() {
     $.getJSON(fetchUrl, function(resp) {
       maxImages = Number(resp.maxImages || 10);
 
-      const items = (resp.items || []).map(it => ({
-        ID: String(it.ID),
-        src: it.src,
-        srct: it.srct || it.src,
-        title: it.title || '',
-        kind: it.kind || 'image'
-      }));
+      // aceita string ("products/xxx.jpg") ou objeto ({ path: "...", title: "..." }) ou já-absoluto ({ src: "http..." })
+      const raw = Array.isArray(resp.items) ? resp.items : [];
+      const items = raw.map((it, idx) => {
+        if (typeof it === 'string') {
+          const url = storageUrl(it);
+          return { ID: String(idx), src: url, srct: url, title: '', kind: 'image' };
+        }
+        const rel = it.path ?? it.rel ?? it.url ?? it.src ?? '';
+        const url = it.src ? it.src : storageUrl(rel);
+        return {
+          ID: String(it.ID ?? idx),
+          src: url,
+          srct: it.srct ? it.srct : url,
+          title: it.title || '',
+          kind: it.kind || 'image'
+        };
+      });
 
       currentItems = items;
 
-      // Reinicializa nanoGallery2 com o layout MOSAIC (Demo_Mosaic_1 adaptado)
       try { $gal.nanogallery2('destroy'); } catch(e) {}
+
       $gal.nanogallery2({
         items: items,
 
-        // LAYOUT MOSAIC
         galleryMosaic : [
           { w: 2, h: 2, c: 1, r: 1 },
           { w: 1, h: 1, c: 3, r: 1 },
@@ -160,7 +174,6 @@
         gallerySorting: 'random',
         thumbnailDisplayOrder: 'random',
 
-        // Aparência dos thumbs (como no demo)
         thumbnailHeight: 180,
         thumbnailWidth: 220,
         thumbnailAlignment: 'scaled',
@@ -169,37 +182,28 @@
         thumbnailBorderHorizontal: 0,
         thumbnailBorderVertical: 0,
 
-        // Toolbars/labels
         thumbnailToolbarImage: null,
         thumbnailToolbarAlbum: null,
         thumbnailLabel: { display: false },
 
-        // Animações (demo)
         galleryDisplayTransitionDuration: 1500,
         thumbnailDisplayTransition: 'imageSlideUp',
         thumbnailDisplayTransitionDuration: 1200,
         thumbnailDisplayTransitionEasing: 'easeInOutQuint',
         thumbnailDisplayInterval: 60,
 
-        // Hover/touch
         thumbnailBuildInit2: 'image_scale_1.15',
         thumbnailHoverEffect2: 'thumbnail_scale_1.00_1.05_300|image_scale_1.15_1.00',
         touchAnimation: true,
         touchAutoOpenDelay: 500,
 
-        // Lightbox
         viewerToolbar: { display: false },
         viewerTools: {
           topLeft: 'label',
           topRight: 'shareButton, rotateLeft, rotateRight, fullscreenButton, closeButton'
         },
 
-        // Tema
-        galleryTheme : {
-          thumbnail: { background: '#111' }
-        },
-
-        // Deep-link
+        galleryTheme : { thumbnail: { background: '#111' } },
         locationHash: true
       });
 
@@ -209,19 +213,16 @@
 
   function updateAddState(count, limit) {
     if (count >= limit) {
-      $btnAdd.prop('disabled', true);
-      $btnAdd.attr('data-bs-original-title', I18N.MAX_REACHED);
+      $('#btnAdd').prop('disabled', true).attr('data-bs-original-title', I18N.MAX_REACHED);
     } else {
-      $btnAdd.prop('disabled', false);
-      $btnAdd.attr('data-bs-original-title', I18N.CLICK_TO_ADD);
+      $('#btnAdd').prop('disabled', false).attr('data-bs-original-title', I18N.CLICK_TO_ADD);
     }
-    tooltip.update();
   }
 
-  // ---------- UPLOAD ----------
-  $btnAdd.on('click', () => $photosInput.trigger('click'));
+  // Upload
+  $('#btnAdd').on('click', () => $('#photosInput').trigger('click'));
 
-  $photosInput.on('change', function() {
+  $('#photosInput').on('change', function() {
     const selected = this.files ? this.files.length : 0;
     if (!selected) return;
 
@@ -229,13 +230,13 @@
     if (total > maxImages) {
       const left = Math.max(0, maxImages - currentItems.length);
       alert(I18N.MAX_EXPLAIN + ' ' + I18N.YOU_CAN_ADD_UP_TO + ' ' + left + '.');
-      $photosInput.val('');
+      $(this).val('');
       return;
     }
-    $formUpload.trigger('submit');
+    $('#formUpload').trigger('submit');
   });
 
-  // ---------- MODAL DE REMOÇÃO ----------
+  // Remoção em lote
   const removeModalEl = document.getElementById('removeModal');
 
   removeModalEl.addEventListener('show.bs.modal', () => {
@@ -244,19 +245,21 @@
   });
 
   removeModalEl.addEventListener('hidden.bs.modal', () => {
-    $removeGrid.empty();
-    $btnConfirmDelete.prop('disabled', true);
-    $checkAll.prop('checked', false);
+    $('#removeGrid').empty();
+    $('#btnConfirmDelete').prop('disabled', true);
+    $('#checkAll').prop('checked', false);
   });
 
   function renderRemoveGrid(items) {
-    $removeGrid.empty();
+    const $grid = $('#removeGrid');
+    $grid.empty();
+
     if (!items.length) {
-      $removeGrid.append('<div class="col-12 text-muted">' + I18N.NO_IMAGES + '</div>');
+      $grid.append('<div class="col-12 text-muted">' + I18N.NO_IMAGES + '</div>');
       return;
     }
 
-    items.forEach((it) => {
+    items.forEach((it, i) => {
       const col = $(`
         <div class="col-6 col-md-3 col-lg-2">
           <label class="w-100 d-block border rounded p-1" style="cursor:pointer;">
@@ -264,39 +267,31 @@
               <img src="${it.srct || it.src}" alt="" class="w-100 h-100" style="object-fit:cover;">
             </div>
             <div class="form-check text-center">
-              <input class="form-check-input chk-item" type="checkbox" value="${it.ID}">
-              <span class="small text-muted">IMG ${parseInt(it.ID, 10) + 1}</span>
+              <input class="form-check-input chk-item" type="checkbox" value="${it.ID ?? i}">
+              <span class="small text-muted">IMG ${parseInt(it.ID ?? i, 10) + 1}</span>
             </div>
           </label>
         </div>
       `);
-      $removeGrid.append(col);
+      $grid.append(col);
     });
 
-    // Selecionar tudo
-    $checkAll.off('change').on('change', function() {
+    $('#checkAll').off('change').on('change', function() {
       const checked = $(this).is(':checked');
-      $removeGrid.find('.chk-item').prop('checked', checked);
+      $grid.find('.chk-item').prop('checked', checked);
       updateDeleteButtonState();
     });
 
-    // Habilitar/Desabilitar botão remover
-    $removeGrid.find('.chk-item').on('change', function() {
+    $grid.find('.chk-item').on('change', function() {
       updateDeleteButtonState();
-      if (!$(this).is(':checked')) {
-        $checkAll.prop('checked', false);
-      }
+      if (!$(this).is(':checked')) $('#checkAll').prop('checked', false);
     });
 
-    // Submit com confirmação e indexes[]
     $('#formDelete').off('submit').on('submit', function(e) {
       e.preventDefault();
       const ids = getSelectedIds();
       if (!ids.length) return;
-
-      if (!confirm(I18N.CONFIRM_DELETE)) {
-        return;
-      }
+      if (!confirm(I18N.CONFIRM_DELETE)) return;
 
       const $form = $(this);
       $form.find('input[name="indexes[]"]').remove();
@@ -307,7 +302,7 @@
 
   function getSelectedIds() {
     const ids = [];
-    $removeGrid.find('.chk-item:checked').each(function() {
+    $('#removeGrid').find('.chk-item:checked').each(function() {
       const val = $(this).val();
       if (val !== undefined && val !== null && val !== '') ids.push(val);
     });
@@ -315,10 +310,10 @@
   }
 
   function updateDeleteButtonState() {
-    $btnConfirmDelete.prop('disabled', getSelectedIds().length === 0);
+    $('#btnConfirmDelete').prop('disabled', getSelectedIds().length === 0);
   }
 
-  // Inicialização
+  // start
   refreshGallery();
 })();
 </script>

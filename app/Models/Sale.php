@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Payment;
 
 class Sale extends Model
 {
@@ -48,12 +47,24 @@ class Sale extends Model
 
     public function installments()
     {
-        return $this->hasMany(Installment::class)->orderBy('number');
+        return $this->hasMany(Installment::class, 'sale_id', 'id');
     }
 
     public function photos()
     {
         return $this->hasMany(Photo::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasManyThrough(
+            Payment::class,      // related
+            Installment::class,  // through
+            'sale_id',       // Foreign key on installments referencing sales
+            'installment_id',// Foreign key on payments referencing installments
+            'id',            // Local key on sales
+            'id'             // Local key on installments
+        );
     }
 
     public function remainingBalance(): float

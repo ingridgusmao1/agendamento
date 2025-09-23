@@ -4,11 +4,16 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Product;
+use App\Http\Actions\HousekeepingAction;
 
 class ProductSeeder extends Seeder
 {
+    public function __construct(private HousekeepingAction $hk) {}
+
     public function run(): void
     {
+        $this->hk->cleanPublicFolder(public_path('storage/products'));
+        
         $products = [
             ['name'=>'Sofá 3 Lugares','model'=>'Comfort 300','color'=>'Cinza','size'=>'2.10m','price'=>1899.90,'notes'=>'Tecido suede','complements'=>['almofadas extras']],
             ['name'=>'Mesa de Jantar','model'=>'Serra Talhada','color'=>'Nogueira','size'=>'6 lugares','price'=>1299.00,'notes'=>null,'complements'=>['vidro 8mm']],
