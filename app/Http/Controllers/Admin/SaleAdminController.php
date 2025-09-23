@@ -50,19 +50,4 @@ class SaleAdminController extends Controller
         $html = $this->service->details($sale);
         return response()->json(['html' => $html]);
     }
-
-    /** Excluir venda: só se status == 'fechado' */
-    public function destroy(Sale $sale)
-    {
-        if (!in_array($sale->status, ['fechado'], true)) {
-            return back()->with('err', trans('global.sale_delete_not_allowed'));
-        }
-
-        // se houver cascade/constraints, garanta regras nas FKs ou delete filhos aqui
-        // Ex.: $sale->items()->delete(); $sale->installments()->delete(); $sale->payments()->delete();
-
-        $sale->delete();
-
-        return back()->with('ok', trans('global.deleted_success'));
-    }
 }

@@ -119,7 +119,7 @@ return [
     'deleted_success' => 'Removido com sucesso.',
     'sales' => 'Vendas',
     'sale_details' => 'Detalhes da venda',
-    'search_sale_placeholder' => 'Buscar venda por #ID, cliente, CPF, status...',
+    'search_sale_placeholder' => 'Buscar venda por cliente, CPF, status...',
     'all_status' => 'Todos os status',
     'late' => 'atrasado',
     'closed' => 'fechado',
@@ -153,4 +153,5 @@ return [
     'payments_total' => 'Total de Pagamentos',
     'balance' => 'Saldo',
     'paid_at' => 'Pago em',
+    'sale_number' => 'Nº da nota',
 ];

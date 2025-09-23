@@ -27,10 +27,11 @@
         <tr>
           <th style="width:120px"></th>
           <th>{{ __('global.customer_name') }}</th>
+          <th>{{ __('global.sale_number') }}</th>
           <th>{{ __('global.status') }}</th>
           <th class="text-end">{{ __('global.total') }}</th>
           <th style="width:160px">{{ __('global.register_date') }}</th>
-          <th class="text-end" style="width:150px">{{ __('global.actions') }}</th>
+          <th class="text-end" style="width:150px">{{ __('global.details') }}</th>
         </tr>
       </thead>
       <tbody id="tbodyRows">

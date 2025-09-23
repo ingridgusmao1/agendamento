@@ -21,6 +21,9 @@
   </td>
 
   <td>{{ $cust?->name ?? '-' }}</td>
+
+  <td>{{ $s->number ?? '-' }}</td>
+  
   <td>
     @php
       $badge = match ($s->status) {
@@ -46,18 +49,6 @@
             title="{{ __('global.details') }}">
       <i class="bi bi-eye"></i>
     </button>
-
-    @php $canDelete = ($s->status === 'fechado'); @endphp
-    @if($canDelete)
-      <form method="POST" action="{{ route('admin.sales.destroy', $s) }}" class="d-inline delete-form">
-        @csrf @method('DELETE')
-        <button class="btn btn-sm pm-btn pm-btn-primary"
-                data-bs-toggle="tooltip"
-                title="{{ __('global.delete') }}">
-          <i class="bi bi-trash"></i>
-        </button>
-      </form>
-    @endif
   </td>
 </tr>
 @empty
