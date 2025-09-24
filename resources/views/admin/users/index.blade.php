@@ -1,5 +1,5 @@
 @extends('layouts.admin')
-@section('title', __('global.users'))
+@section('title', __('global.employees'))
 
 @section('content')
 <div class="d-flex mb-3">

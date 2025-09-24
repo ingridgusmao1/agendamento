@@ -155,4 +155,5 @@ return [
     'paid_at' => 'Pago em',
     'sale_number' => 'Nº da nota',
     'note' => 'Observação',
+    'employees' => 'Colaboradores',
 ];
