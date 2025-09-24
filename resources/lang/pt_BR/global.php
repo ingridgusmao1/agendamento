@@ -161,4 +161,5 @@ return [
     'store'    => 'Loja',
     'both'     => 'Ambos',
     'other'    => 'Outro',
+    'payment_method' => 'Método',
 ];
