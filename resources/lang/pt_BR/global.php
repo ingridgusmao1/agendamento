@@ -156,4 +156,8 @@ return [
     'sale_number' => 'Nº da nota',
     'note' => 'Observação',
     'employees' => 'Colaboradores',
+    'financial_reports' => 'Relatórios Financeiros',
+    'financial_reports_caption' => 'Gerencie seus relatórios financeiros',
+    'search' => 'Buscar',
+    'clear' => 'Limpar',
 ];
