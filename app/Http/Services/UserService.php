@@ -48,13 +48,14 @@ class UserService
             'type'     => $data['type'],
             'email'    => $data['code'].'@local',
             'password' => Hash::make($data['password']),
+            'store_mode' => $data['store_mode'] ?? null,
         ]);
     }
 
     /** Atualização com regra de senha/admin */
     public function update(User $user, array $data): void
     {
-        $payload = Arr::only($data, ['name','type']);
+        $payload = Arr::only($data, ['name','type','store_mode']);
 
         // Opcional: não permitir trocar senha de contas admin por aqui
         if (!empty($data['password']) && $user->type !== 'admin') {

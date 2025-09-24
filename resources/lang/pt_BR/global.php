@@ -155,5 +155,11 @@ return [
     'paid_at' => 'Pago em',
     'sale_number' => 'Nº da nota',
     'note' => 'Observação',
+    'employees' => 'Colaboradores',
+    'seller_mode' => 'Modalidade/loja',
+    'external' => 'Externo',
+    'store'    => 'Loja',
+    'both'     => 'Ambos',
+    'other'    => 'Outro',
     'payment_method' => 'Método',
 ];

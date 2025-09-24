@@ -1,5 +1,5 @@
 @extends('layouts.admin')
-@section('title', __('global.users'))
+@section('title', __('global.employees'))
 
 @section('content')
 <div class="d-flex mb-3">
@@ -20,6 +20,7 @@
           <th>{{ __('global.code') }}</th>
           <th>{{ __('global.name') }}</th>
           <th>{{ __('global.type') }}</th>
+          <th style="width:160px">{{ __('global.seller_mode') }}</th>
           <th class="text-end">{{ __('global.actions') }}</th>
         </tr>
       </thead>
@@ -78,6 +79,16 @@
           </select>
         </div>
         <div class="mb-2">
+          <label class="form-label">{{ __('global.seller_mode') }}</label>
+          <select name="store_mode" class="form-select pm-select">
+            <option value="">{{ __('global.modal_choose') }} / —</option>
+            <option value="externo">{{ __('global.external') }}</option>
+            <option value="loja">{{ __('global.store') }}</option>
+            <option value="ambos">{{ __('global.both') }}</option>
+            <option value="outro">{{ __('global.other') }}</option>
+          </select>
+        </div>
+        <div class="mb-2">
           <label class="form-label">{{ __('global.password') }}</label>
           <input type="password" name="password" class="form-control pm-input" required minlength="4">
         </div>
@@ -120,6 +131,16 @@
               @endforeach
           </select>
         </div>
+        <div class="mb-2">
+          <label class="form-label">{{ __('global.seller_mode') }}</label>
+          <select name="store_mode" id="editStoreMode" class="form-select pm-select">
+            <option value="">—</option>
+            <option value="externo">{{ __('global.external') }}</option>
+            <option value="loja">{{ __('global.store') }}</option>
+            <option value="ambos">{{ __('global.both') }}</option>
+            <option value="outro">{{ __('global.other') }}</option>
+          </select>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn pm-btn pm-btn-primary">{{ __('global.save') }}</button>
@@ -154,8 +175,11 @@
 @push('scripts')
 <script>
 $('#modalCreate').on('show.bs.modal', function () {
-    const select = $(this).find('select[name="type"]');
-    select.val("");
+  const selectType = $(this).find('select[name="type"]');
+  selectType.val("");
+  // store_mode começa vazio (nullable)
+  const selectMode = $(this).find('select[name="store_mode"]');
+  selectMode.val("");
 });
 
 (function(){
@@ -169,14 +193,48 @@ $('#modalCreate').on('show.bs.modal', function () {
   const confirmDeleteMsg = @json(__('global.delete_this_user'));
 
   function initTooltips(){
-    document.querySelectorAll('[data-bs-toggle="tooltip"]')
-      .forEach(el => new bootstrap.Tooltip(el));
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+      if (el._tooltipInstance) { el._tooltipInstance.dispose(); }
+      el._tooltipInstance = new bootstrap.Tooltip(el);
+    });
   }
 
   function wireDeleteConfirm(){
     document.querySelectorAll('.delete-form').forEach(f => {
       f.addEventListener('submit', (e) => {
         if (!confirm(confirmDeleteMsg)) e.preventDefault();
+      });
+    });
+  }
+
+  function wireEditButtons(){
+    const $modalEdit = document.getElementById('modalEdit');
+    const $formEdit  = document.getElementById('formEdit');
+    const $editType  = document.getElementById('editType');
+    const $editName  = document.getElementById('editName');
+    const $editMode  = document.getElementById('editStoreMode');
+
+    document.querySelectorAll('.btn-edit').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id   = btn.getAttribute('data-id');
+        const name = btn.getAttribute('data-name');
+        const type = btn.getAttribute('data-type');
+        const mode = btn.getAttribute('data-store-mode') || '';
+
+        if ($editName) $editName.value = name || '';
+        if ($editType) $editType.value = type || '';
+        if ($editMode) $editMode.value = mode;
+
+        if ($formEdit) $formEdit.setAttribute('action', '/admin/users/' + id);
+        new bootstrap.Modal($modalEdit).show();
+      });
+    });
+
+    document.querySelectorAll('.btn-reset').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        document.getElementById('formReset').setAttribute('action', '/admin/users/' + id + '/reset-password');
+        new bootstrap.Modal(document.getElementById('modalReset')).show();
       });
     });
   }
@@ -192,12 +250,13 @@ $('#modalCreate').on('show.bs.modal', function () {
     fetch(`${urlFetch}?${params.toString()}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
       .then(r => r.json())
       .then(meta => {
-        $tbody.innerHTML  = meta.html;
+        $tbody.innerHTML  = meta.html || '';
         $btnPrev.disabled = !meta.hasPrev;
         $btnNext.disabled = !meta.hasNext;
         updateRange(meta);
         initTooltips();
         wireDeleteConfirm();
+        wireEditButtons(); // necessário para popular o modal com store_mode
       })
       .catch(console.error);
   }
@@ -212,36 +271,6 @@ $('#modalCreate').on('show.bs.modal', function () {
     page = 1;
     clearTimeout(t);
     t = setTimeout(load, 300);
-  });
-
-  // abrir modais (sem lógica de senha no Edit)
-  const $modalEdit = document.getElementById('modalEdit');
-  const $formEdit  = document.getElementById('formEdit');
-  const $editType  = document.getElementById('editType');
-
-  document.addEventListener('click', function(e){
-    const btnEdit  = e.target.closest('.btn-edit');
-    const btnReset = e.target.closest('.btn-reset');
-
-    if (btnEdit) {
-      const id   = btnEdit.getAttribute('data-id');
-      const name = btnEdit.getAttribute('data-name');
-      const type = btnEdit.getAttribute('data-type');
-
-      document.getElementById('editName').value = name;
-      if ($editType) $editType.value = type;
-      if ($formEdit) $formEdit.setAttribute('action', '/admin/users/' + id);
-
-      new bootstrap.Modal($modalEdit).show();
-      return;
-    }
-
-    if (btnReset) {
-      const id = btnReset.getAttribute('data-id');
-      document.getElementById('formReset').setAttribute('action', '/admin/users/' + id + '/reset-password');
-      new bootstrap.Modal(document.getElementById('modalReset')).show();
-      return;
-    }
   });
 
   document.addEventListener('DOMContentLoaded', load);
