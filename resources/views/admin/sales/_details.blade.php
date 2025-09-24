@@ -172,9 +172,9 @@
           <table class="table mb-0 align-middle">
             <thead>
               <tr>
-                <th style="width:80px">#</th>
                 <th>{{ __('global.paid_at') }}</th>
                 <th class="text-end">{{ __('global.amount') }}</th>
+                <th>{{ __('global.payment_method') }}</th>
                 <th>{{ __('global.note') }}</th>
               </tr>
             </thead>
@@ -184,12 +184,13 @@
                   $paidAt = $pay->paid_at ?? $pay->paid_on ?? $pay->created_at ?? null;
                   $pamount = $pay->amount ?? $pay->value ?? 0;
                   $note    = $pay->note ?? '-';
+                  $method  = $pay->payment_method ?? '-';
                 @endphp
                 <tr>
-                  <td>{{ $i+1 }}</td>
-                  <td>{{ $paidAt ? \Illuminate\Support\Carbon::parse($paidAt)->format('d/m/Y H:i') : '-' }}</td>
-                  <td class="text-end">R$ {{ $money($pamount) }}</td>
-                  <td>{{ $note }}</td>
+                  <td class="text-sm-85">{{ $paidAt ? \Illuminate\Support\Carbon::parse($paidAt)->format('d/m/Y H:i') : '-' }}</td>
+                  <td class="text-end text-sm-85">R$ {{ $money($pamount) }}</td>
+                  <td class="text-sm-85">{{ $method }}</td>
+                  <td class="text-sm-85">{{ $note }}</td>
                 </tr>
               @empty
                 <tr><td colspan="4" class="text-center text-muted py-4">{{ __('global.no_results') }}</td></tr>
