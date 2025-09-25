@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Services\SaleService;
+use App\Http\Services\SaleReportService;
 use App\Http\Validators\SaleValidator;
 use App\Models\Sale;
 use Illuminate\Http\Request;
@@ -14,7 +15,10 @@ class SaleAdminController extends Controller
     private const PER_PAGE_MIN     = 5;
     private const PER_PAGE_MAX     = 100;
 
-    public function __construct(private SaleService $service) {}
+    public function __construct(
+        private SaleService $service,
+        private SaleReportService $reportService
+    ) {}
 
     public function index()
     {
@@ -49,5 +53,18 @@ class SaleAdminController extends Controller
     {
         $html = $this->service->details($sale);
         return response()->json(['html' => $html]);
+    }
+
+    public function financialReports(Request $request)
+    {
+        $result = $this->reportService->list($request->all());
+
+        return view('admin.financial_reports.index', [
+            'sales'   => $result['sales'],
+            'filters' => $result['filters'],
+            'chips'   => $result['chips'],
+            'options' => $result['options'],
+            'payment_column'  => $result['payment_column'] ?? 'note',
+        ]);
     }
 }

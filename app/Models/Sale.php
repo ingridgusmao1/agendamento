@@ -55,6 +55,11 @@ class Sale extends Model
         return $this->hasMany(Photo::class);
     }
 
+    public function seller()
+    {
+        return $this->belongsTo(User::class, 'seller_id');
+    }
+
     public function payments()
     {
         return $this->hasManyThrough(

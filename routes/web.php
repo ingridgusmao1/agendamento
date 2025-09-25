@@ -81,4 +81,9 @@ Route::prefix('admin')->middleware(['auth','ensure.usertype:admin'])->name('admi
     Route::get('/sales/{sale}',        [SaleAdminController::class, 'show'])->name('sales.show');
     Route::delete('/sales/{sale}',     [SaleAdminController::class, 'destroy'])->name('sales.destroy');
 
+    //------------------------------------------------------------------------------------------------------------------------
+
+    // Relatórios financeiros
+    Route::get('/financial-reports', [SaleAdminController::class, 'financialReports'])->name('financial-reports.index');
+
 });
