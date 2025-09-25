@@ -8,6 +8,7 @@ use App\Http\Services\SaleReportService;
 use App\Http\Validators\SaleValidator;
 use App\Models\Sale;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class SaleAdminController extends Controller
 {
@@ -67,5 +68,21 @@ class SaleAdminController extends Controller
             'payment_column'  => $result['payment_column'] ?? 'note',
             'totals'          => $result['totals'] ?? [],
         ]);
+    }
+
+    public function financialReportsPdf(Request $request)
+    {
+        // export() deve retornar: sales (Collection sem paginação),
+        // totals['all'], chips, payment_column (o mesmo do index)
+        $data = $this->reportService->export($request->all());
+
+        $pdf = Pdf::loadView('admin.financial_reports.print', [
+            'sales'           => $data['sales'],
+            'chips'           => $data['chips'],
+            'totals'          => $data['totals'],
+            'payment_column'  => $data['payment_column'] ?? 'note',
+        ])->setPaper('a4', 'landscape'); // paisagem fica melhor para tabelas largas
+
+        return $pdf->stream('relatorio-financeiro-'.now()->format('Y-m-d_H-i').'.pdf');
     }
 }

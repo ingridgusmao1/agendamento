@@ -210,4 +210,9 @@ return [
     'total_received_all'    => 'Total recebido (filtro)',
     'total_outstanding_all' => 'Falta receber (filtro)',
     'totals_note_all_filtered' => 'Valores consolidados de todas as vendas que atendem aos filtros aplicados.',
+    'generate_report' => 'Gerar relatório (PDF)',
+    'generated_at'    => 'Gerado em',
+    'applied_filters' => 'Filtros aplicados',
+    'report_footer_note' => 'Documento gerado automaticamente para conferência e impressão.',
+    'financial_report' => 'Relatório Financeiro',
 ];
