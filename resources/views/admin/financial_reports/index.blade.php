@@ -254,7 +254,6 @@
       <table class="table align-middle">
         <thead>
           <tr>
-            <th>#</th>
             <th>{{ __('global.customer') }}</th>
             <th>{{ __('global.seller') }}</th>
             <th>{{ __('global.product_plural') }}</th>
@@ -278,7 +277,6 @@
                             ->implode(', ');
             @endphp
             <tr>
-              <td>{{ ($sales->firstItem() ?? 0) + $i }}</td>
               <td>{{ $customer->name ?? '-' }}</td>
               <td>{{ $seller->name ?? '-' }}</td>
               <td>{{ $prods ?: '-' }}</td>
@@ -297,17 +295,17 @@
 
     {{-- Resumo da paginação + links --}}
     <div class="d-flex justify-content-between align-items-center">
-      <div class="small text-muted">
+    <div class="small text-muted">
         @php
-          $from = $sales->firstItem() ?? 0;
-          $to   = $sales->lastItem() ?? $sales->count();
-          $tot  = $sales->total();
+        $from = $sales->firstItem() ?? 0;
+        $to   = $sales->lastItem() ?? $sales->count();
+        $tot  = $sales->total();
         @endphp
         {{ __('global.showing_results', ['from' => $from, 'to' => $to, 'total' => $tot]) }}
-      </div>
-      <nav>
-        {{ $sales->appends(request()->except('page'))->onEachSide(1)->links('pagination::bootstrap-5') }}
-      </nav>
+    </div>
+    <nav>
+        {{ $sales->appends(request()->except('page'))->onEachSide(1)->links('pagination::bootstrap-5-custom') }}
+    </nav>
     </div>
   </div>
 </div>
