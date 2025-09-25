@@ -9,6 +9,7 @@ use App\Models\Customer;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class SaleReportService
@@ -35,9 +36,10 @@ class SaleReportService
             'to'             => $input['to'] ?? null,
         ];
 
+        // Query base
         $q = Sale::query()->with(['customer','seller','items.product','payments']);
 
-        // Vendedor - nome
+        // Filtros
         if (!empty($f['user_name'])) {
             $q->whereHas('seller', function (Builder $w) use ($f) {
                 $w->where(function (Builder $w2) use ($f) {
@@ -47,36 +49,33 @@ class SaleReportService
                 });
             });
         }
-
-        // Vendedor - tipo
         if (!empty($f['user_type'])) {
             $q->whereHas('seller', fn($w) => $w->whereIn('type', $f['user_type']));
         }
-
-        // Modo de loja
         if (!empty($f['store_mode'])) {
             $q->whereHas('seller', fn($w) => $w->whereIn('store_mode', $f['store_mode']));
         }
-
-        // Pagamentos (coluna dinâmica)
         if (!empty($f['payment_method'])) {
             $col = $this->paymentColumn();
             $q->whereHas('payments', fn($w) => $w->whereIn($col, $f['payment_method']));
         }
-
-        // Cidade do cliente
         if (!empty($f['customer_city'])) {
             $q->whereHas('customer', fn($w) => $w->whereIn('city', $f['customer_city']));
         }
-
-        // Produto (nome)
         if (!empty($f['product_name'])) {
             $q->whereHas('items.product', fn($w) => $w->whereIn('name', $f['product_name']));
         }
 
-        // Período
         $this->applyPeriod($q, $f['period'], $f['from'], $f['to']);
 
+        // -------- Totais DO CONJUNTO FILTRADO (não da página) --------
+        // Obtemos os IDs das vendas filtradas (sem paginação)
+        // Observação: para bases gigantes, dá para trocar por subqueries em SQL puro; aqui priorizei clareza.
+        $saleIds = (clone $q)->select('sales.id')->pluck('sales.id');
+
+        $totalsAll = $this->computeTotalsForSaleIds($saleIds);
+
+        // Paginação (continua normal, só para listagem)
         $sales = $q->orderByDesc('created_at')->paginate(20)->withQueryString();
 
         $options = [
@@ -94,7 +93,8 @@ class SaleReportService
             'filters'        => $f,
             'chips'          => $chips,
             'options'        => $options,
-            'payment_column' => $this->paymentColumn(), // passamos para a view
+            'payment_column' => $this->paymentColumn(),
+            'totals'         => [ 'all' => $totalsAll ], // <<< AQUI: totais do conjunto filtrado
         ];
     }
 
@@ -153,6 +153,7 @@ class SaleReportService
         return $chips;
     }
 
+    // --- Coluna dinâmica de "método" em payments
     private function paymentColumn(): string
     {
         if (Schema::hasColumn('payments', 'method'))  return 'method';
@@ -219,5 +220,62 @@ class SaleReportService
             ->filter()
             ->values()
             ->all();
+    }
+
+    // --------- AGREGADORES DO CONJUNTO FILTRADO ---------
+
+    /** Totais para os sales IDs informados (conjunto inteiro filtrado). */
+    private function computeTotalsForSaleIds($saleIds): array
+    {
+        $ids = collect($saleIds)->filter()->values();
+        if ($ids->isEmpty()) {
+            return ['sold' => 0.0, 'received' => 0.0, 'outstanding' => 0.0];
+        }
+
+        $totalSold     = $this->sumSold($ids);
+        $totalReceived = $this->sumReceived($ids);
+
+        return [
+            'sold'        => $totalSold,
+            'received'    => $totalReceived,
+            'outstanding' => max(0, $totalSold - $totalReceived),
+        ];
+    }
+
+    /** Soma o total vendido para uma lista de sales IDs. */
+    private function sumSold($saleIds): float
+    {
+        $ids = collect($saleIds)->values();
+
+        // 1) se existir sales.total
+        if (Schema::hasColumn('sales', 'total')) {
+            return (float) Sale::query()->whereIn('id', $ids)->sum('total');
+        }
+
+        // 2) soma por items: item.total OU (price|unit_price) * (quantity|qty)
+        $expr = 'COALESCE(sale_items.total, COALESCE(sale_items.price, sale_items.unit_price, 0) * COALESCE(sale_items.quantity, sale_items.qty, 1))';
+
+        return (float) DB::table('sale_items')
+            ->whereIn('sale_items.sale_id', $ids)
+            ->sum(DB::raw($expr));
+    }
+
+    /** Soma o total recebido (payments.amount) para uma lista de sales IDs. */
+    private function sumReceived($saleIds): float
+    {
+        $ids = collect($saleIds)->values();
+
+        // Se payments tem sale_id, soma direto
+        if (Schema::hasColumn('payments', 'sale_id')) {
+            return (float) DB::table('payments')
+                ->whereIn('payments.sale_id', $ids)
+                ->sum('payments.amount');
+        }
+
+        // Caso contrário, some via installments -> sale_id
+        return (float) DB::table('payments')
+            ->join('installments', 'installments.id', '=', 'payments.installment_id')
+            ->whereIn('installments.sale_id', $ids)
+            ->sum('payments.amount');
     }
 }

@@ -65,6 +65,7 @@ class SaleAdminController extends Controller
             'chips'   => $result['chips'],
             'options' => $result['options'],
             'payment_column'  => $result['payment_column'] ?? 'note',
+            'totals'          => $result['totals'] ?? [],
         ]);
     }
 }

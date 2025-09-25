@@ -150,6 +150,39 @@
   </div>
 </div>
 
+@php
+  $allTotals = $totals['all'] ?? ['sold'=>0,'received'=>0,'outstanding'=>0];
+  $fmt = fn($v) => 'R$ ' . number_format((float)$v, 2, ',', '.');
+@endphp
+
+<div class="card shadow-sm pm-card mb-3">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="p-3 rounded border bg-light">
+          <div class="text-muted small">{{ __('global.total_sold_all') }}</div>
+          <div class="fs-4 fw-bold">{{ $fmt($allTotals['sold'] ?? 0) }}</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="p-3 rounded border bg-light">
+          <div class="text-muted small">{{ __('global.total_received_all') }}</div>
+          <div class="fs-4 fw-bold">{{ $fmt($allTotals['received'] ?? 0) }}</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="p-3 rounded border bg-light">
+          <div class="text-muted small">{{ __('global.total_outstanding_all') }}</div>
+          <div class="fs-4 fw-bold">{{ $fmt($allTotals['outstanding'] ?? 0) }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="small text-muted mt-2">
+      {{ __('global.totals_note_all_filtered') }}
+    </div>
+  </div>
+</div>
+
 <div class="card shadow-sm pm-card">
   <div class="card-body">
     <div class="table-responsive">
