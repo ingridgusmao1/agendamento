@@ -206,4 +206,8 @@ return [
     'store_mode_externo' => 'Externo',
     'store_mode_loja'    => 'Na loja',
     'store_mode_outro'   => 'Outro',
+    'total_sold_all'        => 'Total vendido (filtro)',
+    'total_received_all'    => 'Total recebido (filtro)',
+    'total_outstanding_all' => 'Falta receber (filtro)',
+    'totals_note_all_filtered' => 'Valores consolidados de todas as vendas que atendem aos filtros aplicados.',
 ];
