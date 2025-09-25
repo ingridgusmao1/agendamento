@@ -18,6 +18,7 @@ class User extends Authenticatable
         'code',      // login por código
         'password',
         'type',
+        'store_mode',
     ];
 
     protected $hidden = [

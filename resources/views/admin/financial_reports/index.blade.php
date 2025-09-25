@@ -168,11 +168,18 @@
         <tbody>
           @forelse($sales as $i => $sale)
             @php
-              $customer = $sale->customer;
-              $seller   = $sale->seller;
-              $city     = $customer->city ?? '-';
-              $methods  = collect($sale->payments ?? [])->pluck('method')->unique()->implode(', ');
-              $prods    = collect($sale->items ?? [])->map(fn($it)=>$it->product->name ?? '')->filter()->unique()->implode(', ');
+            $customer = $sale->customer;
+            $seller   = $sale->seller;
+            $city     = $customer->city ?? '-';
+
+            $col      = $payment_column ?? 'note';
+            $methods  = collect($sale->payments ?? [])->pluck($col)->filter()->unique()->implode(', ');
+
+            $prods    = collect($sale->items ?? [])
+                            ->map(fn($it) => $it->product->name ?? '')
+                            ->filter()
+                            ->unique()
+                            ->implode(', ');
             @endphp
             <tr>
               <td>{{ ($sales->firstItem() ?? 0) + $i }}</td>

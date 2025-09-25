@@ -25,6 +25,7 @@ final class UserValidator
             'name'     => ['required','string','max:120'],
             'type'     => ['required', Rule::in(self::TYPES)],
             'password' => ['required','string','min:4'],
+            'store_mode' => ['nullable', Rule::in(['externo','loja','ambos','outro'])],
         ];
     }
 
@@ -35,6 +36,7 @@ final class UserValidator
             'name'     => ['required','string','max:120'],
             'type'     => ['required', Rule::in(self::TYPES)],
             'password' => ['nullable','string','min:4'],
+            'store_mode' => ['nullable', Rule::in(['externo','loja','ambos','outro'])],
         ];
     }
 

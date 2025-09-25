@@ -1,7 +1,12 @@
 @forelse ($items as $u)
 <tr>
+  {{-- code --}}
   <td>{{ $u->code }}</td>
+
+  {{-- name --}}
   <td>{{ $u->name }}</td>
+
+  {{-- type (com tradução existente) --}}
   <td>
     @if($u->type === 'admin')
       {{ __('global.modal_administrator') }}
@@ -15,10 +20,27 @@
       {{ $u->type }}
     @endif
   </td>
+
+  {{-- seller_mode (apenas exibição) --}}
+  <td>
+    @php $mode = $u->store_mode ?? ''; @endphp
+    @switch($mode)
+      @case('externo') Externo @break
+      @case('loja')    Loja    @break
+      @case('ambos')   Ambos   @break
+      @case('outro')   Outro   @break
+      @default         —
+    @endswitch
+  </td>
+
+  {{-- actions --}}
   <td class="text-end">
     <button
       class="btn btn-sm pm-btn pm-btn-dark btn-edit"
-      data-id="{{ $u->id }}" data-name="{{ $u->name }}" data-type="{{ $u->type }}"
+      data-id="{{ $u->id }}"
+      data-name="{{ $u->name }}"
+      data-type="{{ $u->type }}"
+      data-store-mode="{{ $u->store_mode ?? '' }}"
       data-bs-toggle="tooltip" title="{{ __('global.edit') }}">
       <i class="bi bi-pencil"></i>
     </button>
@@ -42,6 +64,6 @@
 </tr>
 @empty
 <tr>
-  <td colspan="4" class="text-muted text-center">{{ __('global.no_results') }}</td>
+  <td colspan="5" class="text-muted text-center">{{ __('global.no_results') }}</td>
 </tr>
 @endforelse

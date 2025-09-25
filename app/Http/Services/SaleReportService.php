@@ -8,38 +8,37 @@ use App\Models\Payment;
 use App\Models\Customer;
 use App\Models\User;
 use Carbon\Carbon;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Schema;
 
 class SaleReportService
 {
     public function list(array $input): array
     {
-        // --- Normalização: cada filtro vira array (se vier string única, vira [string])
-        $norm = function($value): array {
+        $norm = function ($value): array {
             if (is_null($value) || $value === '') return [];
-            if (is_array($value)) return array_values(array_filter($value, fn($v) => $v !== '' && $v !== null));
+            if (is_array($value)) {
+                return array_values(array_filter($value, fn($v) => $v !== '' && $v !== null));
+            }
             return [$value];
         };
 
         $f = [
-            'user_name'       => $norm($input['user_name'] ?? []),       // nomes de vendedores
-            'user_type'       => $norm($input['user_type'] ?? []),
-            'store_mode'      => $norm($input['store_mode'] ?? []),
-            'payment_method'  => $norm($input['payment_method'] ?? []),
-            'customer_city'   => $norm($input['customer_city'] ?? []),
-            'product_name'    => $norm($input['product_name'] ?? []),
-            'period'          => $input['period'] ?? null,
-            'from'            => $input['from'] ?? null,
-            'to'              => $input['to'] ?? null,
+            'user_name'      => $norm($input['user_name'] ?? []),
+            'user_type'      => $norm($input['user_type'] ?? []),
+            'store_mode'     => $norm($input['store_mode'] ?? []),
+            'payment_method' => $norm($input['payment_method'] ?? []),
+            'customer_city'  => $norm($input['customer_city'] ?? []),
+            'product_name'   => $norm($input['product_name'] ?? []),
+            'period'         => $input['period'] ?? null,
+            'from'           => $input['from'] ?? null,
+            'to'             => $input['to'] ?? null,
         ];
 
-        // --- Query base
         $q = Sale::query()->with(['customer','seller','items.product','payments']);
 
-        // --- Filtros (múltipla seleção)
+        // Vendedor - nome
         if (!empty($f['user_name'])) {
-            // busca por nome "like" para cada termo
             $q->whereHas('seller', function (Builder $w) use ($f) {
                 $w->where(function (Builder $w2) use ($f) {
                     foreach ($f['user_name'] as $name) {
@@ -49,49 +48,53 @@ class SaleReportService
             });
         }
 
+        // Vendedor - tipo
         if (!empty($f['user_type'])) {
             $q->whereHas('seller', fn($w) => $w->whereIn('type', $f['user_type']));
         }
 
+        // Modo de loja
         if (!empty($f['store_mode'])) {
             $q->whereHas('seller', fn($w) => $w->whereIn('store_mode', $f['store_mode']));
         }
 
+        // Pagamentos (coluna dinâmica)
         if (!empty($f['payment_method'])) {
-            $q->whereHas('payments', fn($w) => $w->whereIn('method', $f['payment_method']));
+            $col = $this->paymentColumn();
+            $q->whereHas('payments', fn($w) => $w->whereIn($col, $f['payment_method']));
         }
 
+        // Cidade do cliente
         if (!empty($f['customer_city'])) {
             $q->whereHas('customer', fn($w) => $w->whereIn('city', $f['customer_city']));
         }
 
+        // Produto (nome)
         if (!empty($f['product_name'])) {
             $q->whereHas('items.product', fn($w) => $w->whereIn('name', $f['product_name']));
         }
 
-        // --- Período
+        // Período
         $this->applyPeriod($q, $f['period'], $f['from'], $f['to']);
 
-        // --- Ordenação e paginação
         $sales = $q->orderByDesc('created_at')->paginate(20)->withQueryString();
 
-        // --- Opções (para checkboxes)
         $options = [
             'cities'          => $this->citiesOptions(),
             'products'        => $this->productNameOptions(),
             'payment_methods' => $this->paymentMethodOptions(),
-            'user_types'      => $this->userTypeOptions(),      // ajuste conforme seus possíveis valores
-            'store_modes'     => $this->storeModeOptions(),     // idem
+            'user_types'      => $this->userTypeOptions(),
+            'store_modes'     => $this->storeModeOptions(),
         ];
 
-        // --- Chips legíveis (sem JSON)
         $chips = $this->chips($f);
 
         return [
-            'sales'   => $sales,
-            'filters' => $f,
-            'chips'   => $chips,
-            'options' => $options,
+            'sales'          => $sales,
+            'filters'        => $f,
+            'chips'          => $chips,
+            'options'        => $options,
+            'payment_column' => $this->paymentColumn(), // passamos para a view
         ];
     }
 
@@ -110,7 +113,6 @@ class SaleReportService
         } elseif ($period === 'this_year') {
             $q->whereBetween('created_at', [now()->startOfYear(), now()]);
         } else {
-            // intervalo manual (seguro contra nulos)
             $fromDate = $from ? Carbon::parse($from) : (Sale::min('created_at') ?? now()->startOfDay());
             $toDate   = $to   ? Carbon::parse($to)   : now();
             $q->whereBetween('created_at', [$fromDate, $toDate]);
@@ -134,7 +136,6 @@ class SaleReportService
             $chips[] = __('global.chip_seller_names', ['values' => implode(', ', $f['user_name'])]);
         }
         if (!empty($f['user_type'])) {
-            // traduz cada tipo se houver chave
             $vals = array_map(fn($t) => __('global.seller_type_'.$t), $f['user_type']);
             $chips[] = __('global.chip_seller_types', ['values' => implode(', ', $vals)]);
         }
@@ -152,9 +153,28 @@ class SaleReportService
         return $chips;
     }
 
+    private function paymentColumn(): string
+    {
+        if (Schema::hasColumn('payments', 'method'))  return 'method';
+        if (Schema::hasColumn('payments', 'gateway')) return 'gateway';
+        return 'note';
+    }
+
+    private function paymentMethodOptions(): array
+    {
+        $col = $this->paymentColumn();
+        return Payment::query()
+            ->whereNotNull($col)
+            ->distinct()
+            ->orderBy($col)
+            ->pluck($col)
+            ->filter()
+            ->values()
+            ->all();
+    }
+
     private function citiesOptions(): array
     {
-        // lista de cidades distintas de clientes
         return Customer::query()
             ->whereNotNull('city')
             ->distinct()
@@ -177,21 +197,8 @@ class SaleReportService
             ->all();
     }
 
-    private function paymentMethodOptions(): array
-    {
-        return Payment::query()
-            ->whereNotNull('method')
-            ->distinct()
-            ->orderBy('method')
-            ->pluck('method')
-            ->filter()
-            ->values()
-            ->all();
-    }
-
     private function userTypeOptions(): array
     {
-        // Se seus tipos são livres, pegue do User; se são enumerados, retorne um array fixo
         return User::query()
             ->whereNotNull('type')
             ->distinct()
@@ -204,7 +211,6 @@ class SaleReportService
 
     private function storeModeOptions(): array
     {
-        // idem para store_mode
         return User::query()
             ->whereNotNull('store_mode')
             ->distinct()
