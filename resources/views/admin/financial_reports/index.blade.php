@@ -4,155 +4,208 @@
 @section('content')
 <div class="card shadow-sm pm-card mb-3">
   <div class="card-body">
-    <form method="GET" action="{{ route('admin.financial-reports.index') }}" class="row g-2">
+    <form method="GET" action="{{ route('admin.financial-reports.index') }}" class="row g-3">
+      {{-- Nomes de vendedores (checkbox múltiplo, se você quiser listar alguns nomes conhecidos;
+           se preferir, remova esta seção e deixe apenas user_type) --}}
+      @if(!empty($options['seller_names'] ?? []))
+      <div class="col-12">
+        <div class="fw-bold mb-1">{{ __('global.seller_plural') }}</div>
+        <div class="d-flex flex-wrap gap-3">
+          @foreach($options['seller_names'] as $name)
+            @php $checked = in_array($name, $filters['user_name'] ?? []); @endphp
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="user_name[]" id="seller-{{ md5($name) }}" value="{{ $name }}" {{ $checked ? 'checked' : '' }}>
+              <label class="form-check-label" for="seller-{{ md5($name) }}">{{ $name }}</label>
+            </div>
+          @endforeach
+        </div>
+      </div>
+      @endif
+
+      {{-- Tipos de vendedor --}}
+      <div class="col-12">
+        <div class="fw-bold mb-1">{{ __('global.seller_type_plural') }}</div>
+        <div class="d-flex flex-wrap gap-3">
+          @foreach(($options['user_types'] ?? []) as $type)
+            @php $checked = in_array($type, $filters['user_type'] ?? []); @endphp
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="user_type[]" id="ut-{{ md5($type) }}" value="{{ $type }}" {{ $checked ? 'checked' : '' }}>
+              <label class="form-check-label" for="ut-{{ md5($type) }}">{{ __('global.seller_type_'.$type) }}</label>
+            </div>
+          @endforeach
+        </div>
+      </div>
+
+      {{-- Modo de loja --}}
+      <div class="col-12">
+        <div class="fw-bold mb-1">{{ __('global.store_mode_plural') }}</div>
+        <div class="d-flex flex-wrap gap-3">
+          @foreach(($options['store_modes'] ?? []) as $mode)
+            @php $checked = in_array($mode, $filters['store_mode'] ?? []); @endphp
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="store_mode[]" id="sm-{{ md5($mode) }}" value="{{ $mode }}" {{ $checked ? 'checked' : '' }}>
+              <label class="form-check-label" for="sm-{{ md5($mode) }}">{{ __('global.store_mode_'.$mode) }}</label>
+            </div>
+          @endforeach
+        </div>
+      </div>
+
+      {{-- Métodos de pagamento --}}
+      <div class="col-12">
+        <div class="fw-bold mb-1">{{ __('global.payment_method_plural') }}</div>
+        <div class="d-flex flex-wrap gap-3">
+          @foreach(($options['payment_methods'] ?? []) as $method)
+            @php $checked = in_array($method, $filters['payment_method'] ?? []); @endphp
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="payment_method[]" id="pm-{{ md5($method) }}" value="{{ $method }}" {{ $checked ? 'checked' : '' }}>
+              <label class="form-check-label" for="pm-{{ md5($method) }}">{{ $method }}</label>
+            </div>
+          @endforeach
+        </div>
+      </div>
+
+      {{-- Cidades --}}
+      <div class="col-12">
+        <div class="fw-bold mb-1">{{ __('global.city_plural') }}</div>
+        <div class="d-flex flex-wrap gap-3">
+          @foreach(($options['cities'] ?? []) as $city)
+            @php $checked = in_array($city, $filters['customer_city'] ?? []); @endphp
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="customer_city[]" id="city-{{ md5($city) }}" value="{{ $city }}" {{ $checked ? 'checked' : '' }}>
+              <label class="form-check-label" for="city-{{ md5($city) }}">{{ $city }}</label>
+            </div>
+          @endforeach
+        </div>
+      </div>
+
+      {{-- Produtos (por nome). Se quiser por ID, troque para product_id[] e ajuste o service. --}}
+      <div class="col-12">
+        <div class="fw-bold mb-1">{{ __('global.product_plural') }}</div>
+        <div class="d-flex flex-wrap gap-3">
+          @foreach(($options['products'] ?? []) as $pname)
+            @php $checked = in_array($pname, $filters['product_name'] ?? []); @endphp
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="product_name[]" id="prod-{{ md5($pname) }}" value="{{ $pname }}" {{ $checked ? 'checked' : '' }}>
+              <label class="form-check-label" for="prod-{{ md5($pname) }}">{{ $pname }}</label>
+            </div>
+          @endforeach
+        </div>
+      </div>
+
+      {{-- Período predefinido --}}
       <div class="col-md-3">
-        <input type="text" name="user_name" value="{{ $filters['user_name'] ?? '' }}"
-               placeholder="Nome do vendedor" class="form-control pm-input">
-      </div>
-
-      <div class="col-md-2">
-        <select name="user_type" class="form-select pm-select">
-          <option value="">Tipo</option>
-          <option value="vendedor" {{ ($filters['user_type'] ?? '')=='vendedor'?'selected':'' }}>Vendedor</option>
-          <option value="cobrador" {{ ($filters['user_type'] ?? '')=='cobrador'?'selected':'' }}>Cobrador</option>
-          <option value="vendedor_cobrador" {{ ($filters['user_type'] ?? '')=='vendedor_cobrador'?'selected':'' }}>Vendedor/Cobrador</option>
-        </select>
-      </div>
-
-      <div class="col-md-2">
-        <select name="store_mode" class="form-select pm-select">
-          <option value="">Modalidade</option>
-          <option value="externo" {{ ($filters['store_mode'] ?? '')=='externo'?'selected':'' }}>Externo</option>
-          <option value="loja"    {{ ($filters['store_mode'] ?? '')=='loja'?'selected':'' }}>Loja</option>
-          <option value="ambos"   {{ ($filters['store_mode'] ?? '')=='ambos'?'selected':'' }}>Ambos</option>
-          <option value="outro"   {{ ($filters['store_mode'] ?? '')=='outro'?'selected':'' }}>Outro</option>
-        </select>
-      </div>
-
-      <div class="col-md-2">
-        <input type="text" name="product_name" value="{{ $filters['product_name'] ?? '' }}"
-               placeholder="Produto" class="form-control pm-input">
-      </div>
-
-      <div class="col-md-2">
-        <input type="text" name="customer_city" value="{{ $filters['customer_city'] ?? '' }}"
-               placeholder="Cidade do cliente" class="form-control pm-input">
-      </div>
-
-      <div class="col-md-2">
-        <select name="payment_method" class="form-select pm-select">
-          <option value="">Forma de Pagamento</option>
-          <option value="avista"    {{ ($filters['payment_method'] ?? '')=='avista'?'selected':'' }}>À vista</option>
-          <option value="credito"   {{ ($filters['payment_method'] ?? '')=='credito'?'selected':'' }}>Cartão de crédito</option>
-          <option value="crediario" {{ ($filters['payment_method'] ?? '')=='crediario'?'selected':'' }}>Crediário</option>
-          <option value="outro"     {{ ($filters['payment_method'] ?? '')=='outro'?'selected':'' }}>Outro</option>
-        </select>
-      </div>
-
-      <div class="col-md-2">
+        <label class="form-label">{{ __('global.date_range') }}</label>
         <select name="period" class="form-select pm-select">
-          <option value="">Intervalo</option>
-          <option value="last_week"  {{ ($filters['period'] ?? '')=='last_week'?'selected':'' }}>Última semana</option>
-          <option value="this_week"  {{ ($filters['period'] ?? '')=='this_week'?'selected':'' }}>Esta semana</option>
-          <option value="last_month" {{ ($filters['period'] ?? '')=='last_month'?'selected':'' }}>Último mês</option>
-          <option value="this_month" {{ ($filters['period'] ?? '')=='this_month'?'selected':'' }}>Este mês</option>
-          <option value="last_year"  {{ ($filters['period'] ?? '')=='last_year'?'selected':'' }}>Último ano</option>
-          <option value="this_year"  {{ ($filters['period'] ?? '')=='this_year'?'selected':'' }}>Este ano</option>
+          <option value="">{{ __('global.period_custom') }}</option>
+          @php $p = $filters['period'] ?? ''; @endphp
+          <option value="this_week"  {{ $p==='this_week'  ? 'selected':'' }}>{{ __('global.this_week') }}</option>
+          <option value="last_week"  {{ $p==='last_week'  ? 'selected':'' }}>{{ __('global.last_week') }}</option>
+          <option value="this_month" {{ $p==='this_month' ? 'selected':'' }}>{{ __('global.this_month') }}</option>
+          <option value="last_month" {{ $p==='last_month' ? 'selected':'' }}>{{ __('global.last_month') }}</option>
+          <option value="this_year"  {{ $p==='this_year'  ? 'selected':'' }}>{{ __('global.this_year') }}</option>
+          <option value="last_year"  {{ $p==='last_year'  ? 'selected':'' }}>{{ __('global.last_year') }}</option>
         </select>
       </div>
 
+      {{-- Intervalo manual --}}
       <div class="col-md-2">
+        <label class="form-label">{{ __('global.from') }}</label>
         <input type="date" name="from" value="{{ $filters['from'] ?? '' }}" class="form-control pm-input">
       </div>
-
       <div class="col-md-2">
+        <label class="form-label">{{ __('global.to') }}</label>
         <input type="date" name="to" value="{{ $filters['to'] ?? '' }}" class="form-control pm-input">
       </div>
 
+      {{-- Botões --}}
       @php
         $filtersForCheck = $filters ?? [];
         unset($filtersForCheck['page']);
-        $hasFilters = collect($filtersForCheck)->filter(fn($v) => $v !== null && $v !== '')->isNotEmpty();
+        $hasFilters = collect($filtersForCheck)->filter(function($v){
+          if (is_array($v)) return !empty(array_filter($v, fn($x)=>$x!=='' && $x!==null));
+          return $v !== null && $v !== '';
+        })->isNotEmpty();
       @endphp
-      <div class="col-md-2 d-flex gap-2">
-        <button class="btn pm-btn pm-btn-primary w-50 justify-content-center">
+      <div class="col-md-5 d-flex align-items-end gap-2">
+        <button class="btn pm-btn pm-btn-primary">
           {{ __('global.search') }}
         </button>
         <a href="{{ $hasFilters ? route('admin.financial-reports.index') : '#' }}"
-           class="btn pm-btn pm-btn-outline-secondary w-50 justify-content-center {{ $hasFilters ? '' : 'disabled' }}"
+           class="btn pm-btn pm-btn-outline-secondary {{ $hasFilters ? '' : 'disabled' }}"
            @if(!$hasFilters) aria-disabled="true" tabindex="-1" @endif>
-          {{ __('global.clear') ?? 'Limpar' }}
+          {{ __('global.clear') }}
         </a>
       </div>
     </form>
+
+    {{-- Chips legíveis dos filtros --}}
+    @if(!empty($chips))
+      <div class="mt-3">
+        <span class="fw-bold me-2">{{ __('global.filters') }}:</span>
+        @foreach($chips as $chip)
+          <span class="badge text-bg-secondary me-1">{{ $chip }}</span>
+        @endforeach
+      </div>
+    @endif
   </div>
 </div>
 
 <div class="card shadow-sm pm-card">
   <div class="card-body">
-    <h5 class="card-title pm-card-title">Resultados</h5>
-    <p class="text-muted">Filtros: {{ json_encode(array_filter($filters ?? [])) ?: 'nenhum' }}</p>
-
     <div class="table-responsive">
-      <table class="table table-bordered pm-table align-middle">
-        <thead class="table-light">
+      <table class="table align-middle">
+        <thead>
           <tr>
-            @if(empty($filters['user_name']))
-              <th>Vendedor</th>
-            @endif
-            @if(empty($filters['user_type']))
-              <th>Tipo</th>
-            @endif
-            @if(empty($filters['store_mode']))
-              <th>Modalidade</th>
-            @endif
-            @if(empty($filters['product_name']))
-              <th>Produto</th>
-            @endif
-            @if(empty($filters['customer_city']))
-              <th>Cidade</th>
-            @endif
-            @if(empty($filters['payment_method']))
-              <th>Forma de Pagamento</th>
-            @endif
-            <th>Valor</th>
-            <th>Data</th>
+            <th>#</th>
+            <th>{{ __('global.customer') }}</th>
+            <th>{{ __('global.seller') }}</th>
+            <th>{{ __('global.product_plural') }}</th>
+            <th>{{ __('global.payment_method') }}</th>
+            <th>{{ __('global.city') }}</th>
+            <th>{{ __('global.date_range') }}</th>
           </tr>
         </thead>
         <tbody>
-          @forelse($sales as $s)
+          @forelse($sales as $i => $sale)
+            @php
+              $customer = $sale->customer;
+              $seller   = $sale->seller;
+              $city     = $customer->city ?? '-';
+              $methods  = collect($sale->payments ?? [])->pluck('method')->unique()->implode(', ');
+              $prods    = collect($sale->items ?? [])->map(fn($it)=>$it->product->name ?? '')->filter()->unique()->implode(', ');
+            @endphp
             <tr>
-              @if(empty($filters['user_name']))
-                <td>{{ $s->seller->name ?? '-' }}</td>
-              @endif
-              @if(empty($filters['user_type']))
-                <td>{{ $s->seller->type ?? '-' }}</td>
-              @endif
-              @if(empty($filters['store_mode']))
-                <td>{{ $s->seller->store_mode ?? '-' }}</td>
-              @endif
-              @if(empty($filters['product_name']))
-                <td>{{ $s->items->pluck('product.name')->filter()->implode(', ') }}</td>
-              @endif
-              @if(empty($filters['customer_city']))
-                <td>{{ $s->customer->city ?? '-' }}</td>
-              @endif
-              @if(empty($filters['payment_method']))
-                <td>{{ $s->payments->pluck('payment_method')->filter()->implode(', ') }}</td>
-              @endif
-              <td>R$ {{ number_format($s->total, 2, ',', '.') }}</td>
-              <td>{{ $s->created_at->format('d/m/Y') }}</td>
+              <td>{{ ($sales->firstItem() ?? 0) + $i }}</td>
+              <td>{{ $customer->name ?? '-' }}</td>
+              <td>{{ $seller->name ?? '-' }}</td>
+              <td>{{ $prods ?: '-' }}</td>
+              <td>{{ $methods ?: '-' }}</td>
+              <td>{{ $city }}</td>
+              <td>{{ \Illuminate\Support\Carbon::parse($sale->created_at)->format('d/m/Y H:i') }}</td>
             </tr>
           @empty
-            <tr><td colspan="10" class="text-center text-muted">Nenhum resultado</td></tr>
+            <tr>
+              <td colspan="7" class="text-center text-muted">Nenhum resultado</td>
+            </tr>
           @endforelse
         </tbody>
       </table>
     </div>
 
-    <nav class="d-flex justify-content-end">
-      {{ $sales->appends(request()->except('page'))->onEachSide(1)->links('pagination::bootstrap-5') }}
-    </nav>
+    {{-- Resumo da paginação + links --}}
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="small text-muted">
+        @php
+          $from = $sales->firstItem() ?? 0;
+          $to   = $sales->lastItem() ?? $sales->count();
+          $tot  = $sales->total();
+        @endphp
+        {{ __('global.showing_results', ['from' => $from, 'to' => $to, 'total' => $tot]) }}
+      </div>
+      <nav>
+        {{ $sales->appends(request()->except('page'))->onEachSide(1)->links('pagination::bootstrap-5') }}
+      </nav>
+    </div>
   </div>
 </div>
 @endsection

@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Services\SaleService;
+use App\Http\Services\SaleReportService;
 use App\Http\Validators\SaleValidator;
 use App\Models\Sale;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
 
 class SaleAdminController extends Controller
 {
@@ -15,7 +15,10 @@ class SaleAdminController extends Controller
     private const PER_PAGE_MIN     = 5;
     private const PER_PAGE_MAX     = 100;
 
-    public function __construct(private SaleService $service) {}
+    public function __construct(
+        private SaleService $service,
+        private SaleReportService $reportService
+    ) {}
 
     public function index()
     {
@@ -54,58 +57,13 @@ class SaleAdminController extends Controller
 
     public function financialReports(Request $request)
     {
-        $q = Sale::query()->with(['customer','seller','items.product','payments']);
-
-        // Filtros
-        if ($request->filled('user_name')) {
-            $q->whereHas('seller', fn($w) => $w->where('name','like','%'.$request->user_name.'%'));
-        }
-        if ($request->filled('user_type')) {
-            $q->whereHas('seller', fn($w) => $w->where('type',$request->user_type));
-        }
-        if ($request->filled('store_mode')) {
-            $q->whereHas('seller', fn($w) => $w->where('store_mode',$request->store_mode));
-        }
-        if ($request->filled('payment_method')) {
-            $q->whereHas('payments', fn($w) => $w->where('method',$request->payment_method));
-        }
-        if ($request->filled('customer_city')) {
-            $q->whereHas('customer', fn($w) => $w->where('city','like','%'.$request->customer_city.'%'));
-        }
-        if ($request->filled('product_name')) {
-            $q->whereHas('items.product', fn($w) => $w->where('name','like','%'.$request->product_name.'%'));
-        }
-
-        // Filtro de datas (pré-definidos ou custom)
-        $period = $request->input('period');
-        $from   = $request->input('from');
-        $to     = $request->input('to');
-
-        if ($period === 'last_week') {
-            $q->whereBetween('created_at', [now()->subWeek()->startOfWeek(), now()->subWeek()->endOfWeek()]);
-        } elseif ($period === 'this_week') {
-            $q->whereBetween('created_at', [now()->startOfWeek(), now()]);
-        } elseif ($period === 'last_month') {
-            $q->whereBetween('created_at', [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()]);
-        } elseif ($period === 'this_month') {
-            $q->whereBetween('created_at', [now()->startOfMonth(), now()]);
-        } elseif ($period === 'last_year') {
-            $q->whereBetween('created_at', [now()->subYear()->startOfYear(), now()->subYear()->endOfYear()]);
-        } elseif ($period === 'this_year') {
-            $q->whereBetween('created_at', [now()->startOfYear(), now()]);
-        } else {
-            // intervalo manual
-            $fromDate = $from ? Carbon::parse($from) : Sale::min('created_at');
-            $toDate   = $to   ? Carbon::parse($to)   : now();
-            $q->whereBetween('created_at', [$fromDate,$toDate]);
-        }
-
-        $sales = $q->orderByDesc('created_at')->paginate(20);
+        $result = $this->reportService->list($request->all());
 
         return view('admin.financial_reports.index', [
-            'sales'   => $sales,
-            'filters' => $request->all(),
+            'sales'   => $result['sales'],
+            'filters' => $result['filters'],
+            'chips'   => $result['chips'],
+            'options' => $result['options'],
         ]);
     }
-
 }
