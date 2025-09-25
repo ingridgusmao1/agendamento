@@ -295,17 +295,28 @@
 
     {{-- Resumo da paginação + links --}}
     <div class="d-flex justify-content-between align-items-center">
-    <div class="small text-muted">
-        @php
-        $from = $sales->firstItem() ?? 0;
-        $to   = $sales->lastItem() ?? $sales->count();
-        $tot  = $sales->total();
-        @endphp
-        {{ __('global.showing_results', ['from' => $from, 'to' => $to, 'total' => $tot]) }}
+        <div class="small text-muted">
+            @php
+            $from = $sales->firstItem() ?? 0;
+            $to   = $sales->lastItem() ?? $sales->count();
+            $tot  = $sales->total();
+            @endphp
+            {{ __('global.showing_results', ['from' => $from, 'to' => $to, 'total' => $tot]) }}
+        </div>
+        <nav>
+            {{ $sales->appends(request()->except('page'))->onEachSide(1)->links('pagination::bootstrap-5-custom') }}
+        </nav>
     </div>
-    <nav>
-        {{ $sales->appends(request()->except('page'))->onEachSide(1)->links('pagination::bootstrap-5-custom') }}
-    </nav>
+
+    <hr>
+
+    {{-- Impressão do relatório --}}
+    <div class="d-flex justify-content-end mt-3">
+        <a class="btn btn-dark"
+            href="{{ route('admin.financial-reports.print', request()->query()) }}"
+            target="_blank" rel="noopener">
+            {{ __('global.generate_report') }}
+        </a>
     </div>
   </div>
 </div>

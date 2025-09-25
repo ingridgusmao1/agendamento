@@ -98,6 +98,73 @@ class SaleReportService
         ];
     }
 
+    public function export(array $input): array
+    {
+        // --- Normalização idêntica ao list() ---
+        $norm = function ($value): array {
+            if (is_null($value) || $value === '') return [];
+            if (is_array($value)) return array_values(array_filter($value, fn($v) => $v !== '' && $v !== null));
+            return [$value];
+        };
+
+        $f = [
+            'user_name'      => $norm($input['user_name'] ?? []),
+            'user_type'      => $norm($input['user_type'] ?? []),
+            'store_mode'     => $norm($input['store_mode'] ?? []),
+            'payment_method' => $norm($input['payment_method'] ?? []),
+            'customer_city'  => $norm($input['customer_city'] ?? []),
+            'product_name'   => $norm($input['product_name'] ?? []),
+            'period'         => $input['period'] ?? null,
+            'from'           => $input['from'] ?? null,
+            'to'             => $input['to'] ?? null,
+        ];
+
+        // --- Query base com os mesmos withs que o index ---
+        $q = \App\Models\Sale::query()->with(['customer','seller','items.product','payments']);
+
+        if (!empty($f['user_name'])) {
+            $q->whereHas('seller', function (\Illuminate\Database\Eloquent\Builder $w) use ($f) {
+                $w->where(function (\Illuminate\Database\Eloquent\Builder $w2) use ($f) {
+                    foreach ($f['user_name'] as $name) {
+                        $w2->orWhere('name', 'like', '%'.$name.'%');
+                    }
+                });
+            });
+        }
+        if (!empty($f['user_type'])) {
+            $q->whereHas('seller', fn($w) => $w->whereIn('type', $f['user_type']));
+        }
+        if (!empty($f['store_mode'])) {
+            $q->whereHas('seller', fn($w) => $w->whereIn('store_mode', $f['store_mode']));
+        }
+        if (!empty($f['payment_method'])) {
+            $col = $this->paymentColumn();
+            $q->whereHas('payments', fn($w) => $w->whereIn($col, $f['payment_method']));
+        }
+        if (!empty($f['customer_city'])) {
+            $q->whereHas('customer', fn($w) => $w->whereIn('city', $f['customer_city']));
+        }
+        if (!empty($f['product_name'])) {
+            $q->whereHas('items.product', fn($w) => $w->whereIn('name', $f['product_name']));
+        }
+
+        $this->applyPeriod($q, $f['period'], $f['from'], $f['to']);
+
+        // IDs do conjunto filtrado p/ totais
+        $saleIds   = (clone $q)->select('sales.id')->pluck('sales.id');
+        $totalsAll = $this->computeTotalsForSaleIds($saleIds);
+
+        // Todos os registros (sem paginação) para o PDF
+        $salesAll = $q->orderByDesc('created_at')->get();
+
+        return [
+            'sales'          => $salesAll,             // Collection completa
+            'chips'          => $this->chips($f),      // mesmos chips
+            'totals'         => [ 'all' => $totalsAll ],
+            'payment_column' => $this->paymentColumn()
+        ];
+    }
+
     private function applyPeriod(Builder $q, ?string $period, ?string $from, ?string $to): void
     {
         if ($period === 'last_week') {

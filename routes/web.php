@@ -85,5 +85,5 @@ Route::prefix('admin')->middleware(['auth','ensure.usertype:admin'])->name('admi
 
     // Relatórios financeiros
     Route::get('/financial-reports', [SaleAdminController::class, 'financialReports'])->name('financial-reports.index');
-
+    Route::get('/admin/financial-reports/print', [SaleAdminController::class, 'financialReportsPdf'])->name('financial-reports.print');
 });
