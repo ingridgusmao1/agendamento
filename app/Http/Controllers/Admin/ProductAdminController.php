@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Validators\ProductValidator;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\JsonResponse;
 
 class ProductAdminController extends Controller
 {
@@ -26,11 +27,13 @@ class ProductAdminController extends Controller
         return view('admin.products.index');
     }
 
-    public function fetch(Request $request, ProductService $service)
+    public function fetch(Request $request, ProductService $service): JsonResponse
     {
-        $perPage = max(5, min(100, (int)$request->integer('per_page', 20)));
-        $items   = $service->fetch($request->only('q'), $perPage);
+        $request->validate(ProductValidator::fetch());
 
+        $q       = $service->qTrim($request->query('q', ''));
+        $perPage = self::PER_PAGE_DEFAULT;
+        $items = $service->fetch(['q' => $q], $perPage);
         $html = view('admin.products._rows', compact('items'))->render();
 
         return response()->json([
@@ -62,6 +65,7 @@ class ProductAdminController extends Controller
                 ]);
             }
         }
+
         // Regras de STORE (não use rulesForUpdate aqui)
         $validator = Validator::make($request->all(), ProductValidator::rulesForStore());
         if ($validator->fails()) {

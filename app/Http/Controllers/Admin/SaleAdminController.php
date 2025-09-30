@@ -9,6 +9,7 @@ use App\Http\Validators\SaleValidator;
 use App\Models\Sale;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\JsonResponse;
 
 class SaleAdminController extends Controller
 {
@@ -26,26 +27,23 @@ class SaleAdminController extends Controller
         return view('admin.sales.index');
     }
 
-    public function fetch(Request $request)
+    public function fetch(Request $request): JsonResponse
     {
         $request->validate(SaleValidator::fetch());
-
-        $q       = (string) $request->query('q', '');
-        $status  = $request->query('status');
-        $page    = max(1, (int) $request->query('page', 1));
-        $perPage = (int) ($request->query('per_page', $request->query('perPage', self::PER_PAGE_DEFAULT)));
-        $perPage = max(self::PER_PAGE_MIN, min(self::PER_PAGE_MAX, $perPage));
-
+        $q      = $this->service->qTrim($request->query('q', ''));
+        $status = $request->query('status');
+        $page   = max(1, (int) $request->query('page', 1));
+        $perPage = self::PER_PAGE_DEFAULT;
         $payload = $this->service->fetch($q, $status, $page, $perPage);
 
         return response()->json([
-            'html'     => $payload['html'] ?? '',
-            'total'    => (int) ($payload['total']   ?? 0),
-            'page'     => (int) ($payload['page']    ?? $page),
-            'perPage'  => (int) ($payload['perPage'] ?? $perPage),
-            'hasMore'  => (bool)($payload['hasMore'] ?? false),
-            'hasPrev'  => ($payload['page'] ?? $page) > 1,
-            'hasNext'  => (bool)($payload['hasMore'] ?? false),
+            'html'     => (string) ($payload['html']     ?? ''),
+            'total'    => (int)    ($payload['total']    ?? 0),
+            'page'     => (int)    ($payload['page']     ?? $page),
+            'perPage'  => (int)    ($payload['perPage']  ?? $perPage),
+            'hasMore'  => (bool)   ($payload['hasMore']  ?? (($payload['total'] ?? 0) > ($page * $perPage))),
+            'hasPrev'  =>          (($payload['page']    ?? $page) > 1),
+            'hasNext'  => (bool)   ($payload['hasMore']  ?? (($payload['total'] ?? 0) > ($page * $perPage))),
         ]);
     }
 

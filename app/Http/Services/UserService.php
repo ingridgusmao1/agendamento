@@ -78,4 +78,37 @@ class UserService
     {
         $user->update(['password' => Hash::make($password)]);
     }
+
+    /**
+     * Normaliza a query de busca:
+     * - força string
+     * - remove espaços duplicados e controla whitespace
+     * - remove chars de controle
+     * - limita tamanho para evitar abusos (ex.: 120)
+     */
+    public function qTrim(mixed $q): string
+    {
+        if ($q === null) {
+            return '';
+        }
+
+        $q = (string) $q;
+
+        // remove caracteres de controle (exceto \n\t se preferir manter)
+        $q = preg_replace('/[[:cntrl:]]+/u', '', $q) ?? $q;
+
+        // normaliza espaços (qualquer whitespace → espaço simples)
+        $q = preg_replace('/\s+/u', ' ', $q) ?? $q;
+
+        $q = trim($q);
+
+        // limite defensivo
+        if (function_exists('mb_substr')) {
+            $q = mb_substr($q, 0, 120);
+        } else {
+            $q = substr($q, 0, 120);
+        }
+
+        return $q;
+    }
 }
