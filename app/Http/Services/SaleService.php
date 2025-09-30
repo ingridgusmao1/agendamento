@@ -88,4 +88,16 @@ class SaleService {
             ]);
         }
     }
+
+    public function qTrim(mixed $q): string
+    {
+        if ($q === null) return '';
+
+        $q = (string) $q;
+        $q = preg_replace('/[[:cntrl:]]+/u', '', $q) ?? $q;
+        $q = preg_replace('/\s+/u', ' ', $q) ?? $q;
+        $q = trim($q);
+
+        return function_exists('mb_substr') ? mb_substr($q, 0, 200) : substr($q, 0, 200);
+    }
 }

@@ -8,6 +8,8 @@ use App\Models\User;
 use App\Http\Services\UserService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
+use Illuminate\Http\JsonResponse;
 
 class UserAdminController extends Controller
 {
@@ -16,20 +18,21 @@ class UserAdminController extends Controller
     public function __construct(private UserService $service) {}
 
     /** Página principal com tipos disponíveis para o <select> */
-    public function index(Request $r)
+    public function index(Request $r): View
     {
-        $q = trim((string) $r->query('q', ''));
+        $q = $this->service->qTrim($r->query('q', ''));
         $types = UserValidator::TYPES;
 
-        return view('admin.users.index', compact('q','types'));
+        return view('admin.users.index', compact('q', 'types'));
     }
 
     /** Endpoint AJAX para montar linhas da tabela */
-    public function fetch(Request $r)
+    public function fetch(Request $r): JsonResponse
     {
         $r->validate(UserValidator::fetch());
-        $q    = trim((string)$r->query('q',''));
-        $page = max(1, (int)$r->query('page',1));
+
+        $q    = $this->service->qTrim($r->query('q', ''));
+        $page = max(1, (int) $r->query('page', 1));
 
         return response()->json(
             $this->service->fetch($q, $page, self::PER_PAGE)
