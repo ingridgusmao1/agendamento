@@ -9,6 +9,10 @@ class Sale extends Model
 {
     use HasFactory;
 
+    public const STATUS_OPEN = 'aberto';
+    public const STATUS_CLOSED = 'fechado';
+    public const STATUS_DELAYED = 'atrasado';
+
     protected $fillable = [
         'number',
         'customer_id',
@@ -34,6 +38,16 @@ class Sale extends Model
         'due_day'            => 'integer',
         'rescheduled_day'    => 'integer',
     ];
+
+    protected static function booted()
+    {
+        static::creating(function ($sale) {
+            if (empty($sale->number)) {
+                $lastId = Sale::max('id') + 1;
+                $sale->number = 'N'.str_pad($lastId, 5, '0', STR_PAD_LEFT);
+            }
+        });
+    }
 
     public function customer()
     {
