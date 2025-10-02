@@ -15,6 +15,7 @@ class CustomerSeeder extends Seeder
     {
         // 1) Limpar pastas alvo
         $this->hk->cleanPublicFolder(public_path('customers'));
+        $this->hk->cleanPublicFolder(public_path('places'));
 
         // 2) Dados-base
         $base = [
@@ -47,7 +48,7 @@ class CustomerSeeder extends Seeder
             ];
         }
 
-        // 3) Criar/atualizar clientes (sem avatar_path ainda)
+        // 3) Criar/atualizar clientes
         $created = [];
         foreach ($base as $c) {
             $cust = Customer::updateOrCreate(
@@ -60,22 +61,51 @@ class CustomerSeeder extends Seeder
         // 4) Gerar avatar para cada cliente e atualizar avatar_path
         $this->ensureDir(public_path('customers'));
         foreach ($created as $cust) {
-            $filename = $this->customerFilename($cust->name, $cust->id); // e.g. CLIENTE-29-DO-INTERIOR-30.jpg
+            $filename = $this->customerFilename($cust->name, $cust->id);
             $relPath  = 'customers/'.$filename;
             $absPath  = public_path($relPath);
 
             $this->generateAvatarJpeg($absPath, $seed = crc32($cust->name.$cust->id));
             $cust->forceFill(['avatar_path' => $relPath])->save();
         }
+
+        // 5) Gerar imagem de "places" por cliente
+        $this->ensureDir(public_path('places'));
+        foreach ($created as $cust) {
+            $placeFilename = $this->placeFilename((float)$cust->lat, (float)$cust->lng, (int)$cust->id);
+            $placeRelPath  = 'places/' . $placeFilename;
+            $placeAbsPath  = public_path($placeRelPath);
+
+            $seed = crc32("place-{$cust->id}-{$cust->lat}-{$cust->lng}");
+            $this->generateAvatarJpeg($placeAbsPath, $seed);
+
+            // **a linha que faltava:**
+            $cust->forceFill(['place_path' => $placeRelPath])->save();
+        }
+
     }
 
     /** Gera nome do arquivo: NOME-EM-CAIXA-ALTA-ID.jpg */
     private function customerFilename(string $name, int $id): string
     {
-        // slug ASCII e em maiúsculas, preservando hífens
-        $slug = Str::slug($name, '-');   // ex: cliente-29-do-interior
-        $slug = strtoupper($slug);       // ex: CLIENTE-29-DO-INTERIOR
+        $slug = Str::slug($name, '-');
+        $slug = strtoupper($slug);
         return "{$slug}-{$id}.jpg";
+    }
+
+    /** Gera nome do arquivo de place: M34D8732-P12D4301-25.jpg */
+    private function placeFilename(float $lat, float $lng, int $id): string
+    {
+        return $this->coordToken($lat) . '-' . $this->coordToken($lng) . "-{$id}.jpg";
+    }
+
+    private function coordToken(float $value): string
+    {
+        $sign = $value < 0 ? 'M' : 'P';
+        $abs  = abs($value);
+        $formatted = sprintf('%.4f', $abs); // garante 4 casas
+        [$int, $frac] = explode('.', $formatted);
+        return "{$sign}{$int}D{$frac}";
     }
 
     private function ensureDir(string $dir): void
@@ -85,37 +115,19 @@ class CustomerSeeder extends Seeder
         }
     }
 
-    /** Remove diretório recursivamente (não usado por padrão) */
-    private function rrmdir(string $dir): void
-    {
-        if (!is_dir($dir)) return;
-        $items = array_diff(scandir($dir), ['.','..']);
-        foreach ($items as $item) {
-            $path = $dir.DIRECTORY_SEPARATOR.$item;
-            is_dir($path) ? $this->rrmdir($path) : @unlink($path);
-        }
-        @rmdir($dir);
-    }
-
-    /**
-     * Gera um avatar JPG ~160x160 com formas geométricas aleatórias.
-     * Usa GD (sem dependências). Tenta manter < 50 KB via qualidade.
-     */
     private function generateAvatarJpeg(string $path, int $seed = 0): void
     {
         $w = 160; $h = 160;
         $img = imagecreatetruecolor($w, $h);
 
-        // Fundo
         mt_srand($seed);
         $bg = imagecolorallocate($img, mt_rand(200,255), mt_rand(200,255), mt_rand(200,255));
         imagefilledrectangle($img, 0, 0, $w, $h, $bg);
 
-        // Desenhar algumas formas simples
         $nShapes = 6;
         for ($i=0; $i<$nShapes; $i++) {
             $col = imagecolorallocate($img, mt_rand(40,200), mt_rand(40,200), mt_rand(40,200));
-            $type = mt_rand(0, 2); // 0: retângulo, 1: elipse, 2: linhas
+            $type = mt_rand(0, 2);
             switch ($type) {
                 case 0: // retângulo
                     $x1 = mt_rand(0, $w-10); $y1 = mt_rand(0, $h-10);
@@ -127,36 +139,18 @@ class CustomerSeeder extends Seeder
                     $rx = mt_rand(10, 50); $ry = mt_rand(10, 50);
                     imagefilledellipse($img, $cx, $cy, $rx, $ry, $col);
                     break;
-                case 2: // linhas
+                case 2: // linha
                     $x1 = mt_rand(0, $w); $y1 = mt_rand(0, $h);
                     $x2 = mt_rand(0, $w); $y2 = mt_rand(0, $h);
-                    imagesetthickness($img, mt_rand(1, 4));
                     imageline($img, $x1, $y1, $x2, $y2, $col);
                     break;
             }
         }
 
-        // ícone central (círculo) para dar identidade
         $accent = imagecolorallocate($img, mt_rand(0,100), mt_rand(0,100), mt_rand(0,100));
         imagefilledellipse($img, (int)($w/2), (int)($h/2), 64, 64, $accent);
 
-        // Gravar JPEG com tentativa de <50KB: qualidade 70, ajusta se necessário
-        $quality = 72;
-        $tmp = $path.'.tmp';
-        imagejpeg($img, $tmp, $quality);
-        clearstatcache();
-        $size = @filesize($tmp);
-
-        // se passou de 50KB, reduzir qualidade em passos
-        while ($size !== false && $size > 50 * 1024 && $quality > 40) {
-            $quality -= 5;
-            imagejpeg($img, $tmp, $quality);
-            clearstatcache();
-            $size = @filesize($tmp);
-        }
-
-        // mover para destino final
-        @rename($tmp, $path);
+        imagejpeg($img, $path, 72);
         imagedestroy($img);
     }
 }

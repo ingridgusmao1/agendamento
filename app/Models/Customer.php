@@ -12,7 +12,7 @@ class Customer extends Model
 
     protected $fillable = [
         'name','street','number','district','city','reference_point',
-        'rg','cpf','phone','other_contact','lat','lng',
+        'rg','cpf','phone','other_contact','lat','lng','avatar_path','place_path'
     ];
 
     protected $casts = [

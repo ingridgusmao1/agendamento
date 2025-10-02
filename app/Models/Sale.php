@@ -64,11 +64,6 @@ class Sale extends Model
         return $this->hasMany(Installment::class, 'sale_id', 'id');
     }
 
-    public function photos()
-    {
-        return $this->hasMany(Photo::class);
-    }
-
     public function seller()
     {
         return $this->belongsTo(User::class, 'seller_id');
