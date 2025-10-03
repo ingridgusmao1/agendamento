@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\Sale;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\Product;
 
 class SaleController extends Controller
 {
@@ -34,12 +35,15 @@ class SaleController extends Controller
                 $request->merge(['items' => $data['items']]);
             }
 
+            // Validação inicial
             $validated = $request->validate([
                 'customer_id'        => ['required','exists:customers,id'],
                 'items'              => ['required','array','min:1'],
                 'items.*.product_id' => ['required','exists:products,id'],
                 'items.*.qty'        => ['required','integer','min:1'],
                 'items.*.unit_price' => ['required','numeric','min:0'],
+                'items.*.attributes'   => ['nullable','array'],
+                'items.*.attributes.*' => ['string'],
                 'installments_qty'   => ['required','integer','min:1'],
                 'due_day'            => ['required','integer','between:1,31'],
                 'rescheduled_day'    => ['nullable','integer','between:1,31'],
@@ -48,16 +52,44 @@ class SaleController extends Controller
                 'note'               => ['nullable','string'],
                 'gps_lat'            => ['nullable','numeric'],
                 'gps_lng'            => ['nullable','numeric'],
-                // Fotos opcionais
                 'customer_photo'     => ['nullable','image','max:5120'],
                 'place_photo'        => ['nullable','image','max:5120'],
             ]);
 
+            // Validação extra: atributos devem ser escolhidos se o produto tiver complements
+            $productIds = collect($validated['items'])->pluck('product_id')->all();
+            $products = \App\Models\Product::whereIn('id', $productIds)->get()->keyBy('id');
+
+            $errors = [];
+            foreach ($validated['items'] as $idx => $it) {
+                $prod = $products[$it['product_id']] ?? null;
+                $complements = is_array($prod?->complements) ? $prod->complements : [];
+
+                if (!empty($complements)) {
+                    $attrs = $it['attributes'] ?? [];
+                    if (!is_array($attrs) || count($attrs) < 1) {
+                        $errors["items.$idx.attributes"] = 'Selecione ao menos um complemento para este produto.';
+                        continue;
+                    }
+                    $invalid = array_diff($attrs, $complements);
+                    if (!empty($invalid)) {
+                        $errors["items.$idx.attributes"] = 'Complemento inválido para o produto selecionado.';
+                    }
+                }
+            }
+
+            if (!empty($errors)) {
+                return response()->json([
+                    'message' => 'Erro de validação nos itens',
+                    'errors'  => $errors,
+                ], 422);
+            }
+
+            // Calcula total
             $total = collect($validated['items'])
                 ->sum(fn($i) => (int)$i['qty'] * (float)$i['unit_price']);
 
             $sale = DB::transaction(function () use ($validated, $total, $request) {
-
                 // 1) Criar a venda
                 $sale = Sale::create([
                     'customer_id'       => $validated['customer_id'],
@@ -80,7 +112,7 @@ class SaleController extends Controller
                         'product_id' => $item['product_id'],
                         'qty'        => $item['qty'],
                         'unit_price' => $item['unit_price'],
-                        'attributes' => $item['attributes'] ?? null,
+                        'attributes' => $item['attributes'] ?? [],
                     ]);
                 }
 
@@ -91,13 +123,12 @@ class SaleController extends Controller
                     app(SaleService::class)->createInstallments($sale);
                 }
 
-                // 4) Se vierem fotos, atualizar o Customer (avatar/place)
+                // 4) Atualizar fotos do cliente, se existirem
                 $customer = Customer::find($sale->customer_id);
 
                 if ($request->hasFile('customer_photo')) {
                     $filename = $this->customerFilename($customer->name, (int)$customer->id);
-                    $cPath    = $request->file('customer_photo')
-                                        ->storeAs('customers', $filename, 'public');
+                    $cPath    = $request->file('customer_photo')->storeAs('customers', $filename, 'public');
                     $customer->avatar_path = $cPath;
                 }
 
@@ -105,8 +136,7 @@ class SaleController extends Controller
                     $lat      = (float)($validated['gps_lat'] ?? $customer->lat ?? 0);
                     $lng      = (float)($validated['gps_lng'] ?? $customer->lng ?? 0);
                     $filename = $this->placeFilename($lat, $lng, (int)$customer->id);
-                    $pPath    = $request->file('place_photo')
-                                        ->storeAs('places', $filename, 'public');
+                    $pPath    = $request->file('place_photo')->storeAs('places', $filename, 'public');
                     $customer->place_path = $pPath;
                 }
 
