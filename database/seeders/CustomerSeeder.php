@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Customer;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Http\Actions\HousekeepingAction;
 
@@ -14,8 +15,9 @@ class CustomerSeeder extends Seeder
     public function run(): void
     {
         // 1) Limpar pastas alvo
-        $this->hk->cleanPublicFolder(public_path('customers'));
-        $this->hk->cleanPublicFolder(public_path('places'));
+        Storage::disk('public')->makeDirectory('customers');
+        Storage::disk('public')->makeDirectory('places');
+
 
         // 2) Dados-base
         $base = [
@@ -58,31 +60,31 @@ class CustomerSeeder extends Seeder
             $created[] = $cust;
         }
 
-        // 4) Gerar avatar para cada cliente e atualizar avatar_path
-        $this->ensureDir(public_path('customers'));
+        // 4) Gerar avatar para cada cliente e atualizar avatar_path (disk 'public')
+        Storage::disk('public')->makeDirectory('customers');
         foreach ($created as $cust) {
-            $filename = $this->customerFilename($cust->name, $cust->id);
+            $filename = $this->customerFilename($cust->name, (int)$cust->id); // EX.: JOSE-ANTONIO-DA-SILVA-25.jpg
             $relPath  = 'customers/'.$filename;
-            $absPath  = public_path($relPath);
+            $absPath  = Storage::disk('public')->path($relPath);
 
-            $this->generateAvatarJpeg($absPath, $seed = crc32($cust->name.$cust->id));
+            $seed = crc32($cust->name.$cust->id);
+            $this->generateAvatarJpeg($absPath, $seed);
+
             $cust->forceFill(['avatar_path' => $relPath])->save();
         }
 
-        // 5) Gerar imagem de "places" por cliente
-        $this->ensureDir(public_path('places'));
+        // 5) Gerar imagem de "places" por cliente (disk 'public') e atualizar place_path
+        Storage::disk('public')->makeDirectory('places');
         foreach ($created as $cust) {
-            $placeFilename = $this->placeFilename((float)$cust->lat, (float)$cust->lng, (int)$cust->id);
-            $placeRelPath  = 'places/' . $placeFilename;
-            $placeAbsPath  = public_path($placeRelPath);
+            $placeFilename = $this->placeFilename((float)$cust->lat, (float)$cust->lng, (int)$cust->id); // EX.: M34D8732-P12D4301-25.jpg
+            $placeRelPath  = 'places/'.$placeFilename;
+            $placeAbsPath  = Storage::disk('public')->path($placeRelPath);
 
             $seed = crc32("place-{$cust->id}-{$cust->lat}-{$cust->lng}");
             $this->generateAvatarJpeg($placeAbsPath, $seed);
 
-            // **a linha que faltava:**
             $cust->forceFill(['place_path' => $placeRelPath])->save();
         }
-
     }
 
     /** Gera nome do arquivo: NOME-EM-CAIXA-ALTA-ID.jpg */
