@@ -1,6 +1,7 @@
 @php
-  // usado tanto no create quanto no edit
+  $PLACEHOLDER = 'https://via.placeholder.com/240?text=Sem+Imagem';
 @endphp
+
 <div class="row g-3">
   <div class="col-md-8">
     <label class="form-label">{{ __('global.name') }}</label>
@@ -50,16 +51,39 @@
     <input type="number" step="any" name="lng" class="form-control">
   </div>
 
+  {{-- Upload do avatar (editável) + preview clicável --}}
   <div class="col-md-4">
     <label class="form-label">{{ __('global.avatar') }} (max 240×240)</label>
     <input type="file" name="avatar" class="form-control" accept=".jpg,.jpeg,.png,.webp">
     <div class="form-text">{{ __('global.image_constraints_240') }}</div>
     @error('avatar')
-        <div class="text-danger small">{{ $message }}</div>
+      <div class="text-danger small">{{ $message }}</div>
     @enderror
   </div>
   <div class="col-md-2">
-    <img data-avatar-preview src="https://via.placeholder.com/240?text=Avatar"
-         class="img-thumbnail" style="max-width:100%;max-height:120px;object-fit:cover;">
+    <label class="form-label d-block">{{ __('global.preview') }}</label>
+    <img data-avatar-preview
+         src="{{ $PLACEHOLDER }}"
+         class="img-thumbnail cursor-pointer"
+         style="max-width:100%;max-height:120px;object-fit:cover;"
+         title="{{ __('global.click_to_zoom') }}">
+    <div class="text-muted small mt-1">{{ __('global.click_to_zoom') }}</div>
+  </div>
+
+  {{-- Preview do local (somente visualização) --}}
+  <div class="col-md-2">
+    <label class="form-label d-block">{{ __('global.place_photo') }}</label>
+    <img data-place-preview
+         src="{{ $PLACEHOLDER }}"
+         class="img-thumbnail cursor-pointer"
+         style="max-width:100%;max-height:120px;object-fit:cover;"
+         title="{{ __('global.click_to_zoom') }}">
+  </div>
+
+  {{-- Link para Google Maps --}}
+  <div class="col-md-4 d-flex align-items-end">
+    <a data-maps-link href="#" target="_blank" class="link-primary d-inline-flex align-items-center gap-1">
+      <i class="bi bi-geo-alt"></i> <span>{{ __('global.click_to_view_on_map') }}</span>
+    </a>
   </div>
 </div>

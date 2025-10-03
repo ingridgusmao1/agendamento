@@ -4,17 +4,18 @@ namespace App\Http\Validators;
 
 final class CustomerValidator
 {
-    /** Validação para listagem/fetch */
+    /** Regras do fetch (lista/pesquisa via AJAX) */
     public static function fetch(): array
     {
         return [
-            'q'       => ['nullable','string','max:200'],
-            'page'    => ['nullable','integer','min:1'],
-            'perPage' => ['nullable','integer','min:1'],
-            'per_page'=> ['nullable','integer','min:1'],
+            'q'        => ['nullable','string','max:200'],
+            'page'     => ['nullable','integer','min:1'],
+            'perPage'  => ['nullable','integer','min:1'],
+            'per_page' => ['nullable','integer','min:1'],
         ];
     }
 
+    /** Regras para criação */
     public static function rulesForStore(): array
     {
         return [
@@ -30,11 +31,13 @@ final class CustomerValidator
             'other_contact'   => ['nullable','string','max:255'],
             'lat'             => ['nullable','numeric'],
             'lng'             => ['nullable','numeric'],
-            'avatar'          => ['nullable','image','mimes:jpg,jpeg,png,webp','max:4096'],
+            // avatar é opcional; limite extensões comuns e tamanho ~5MB
+            'avatar'          => ['nullable','image','mimes:jpg,jpeg,png,webp','max:5120'],
         ];
     }
 
-    public static function rulesForUpdate(int $customerId): array
+    /** Regras para atualização */
+    public static function rulesForUpdate(int $id): array
     {
         return [
             'name'            => ['sometimes','required','string','max:255'],
@@ -49,7 +52,7 @@ final class CustomerValidator
             'other_contact'   => ['sometimes','nullable','string','max:255'],
             'lat'             => ['sometimes','nullable','numeric'],
             'lng'             => ['sometimes','nullable','numeric'],
-            'avatar'          => ['sometimes','nullable','image','mimes:jpg,jpeg,png,webp'],
+            'avatar'          => ['sometimes','nullable','image','mimes:jpg,jpeg,png,webp','max:5120'],
         ];
     }
 }

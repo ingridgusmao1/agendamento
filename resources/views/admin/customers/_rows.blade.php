@@ -41,7 +41,10 @@
       data-other_contact="{{ e((string)$c->other_contact) }}"
       data-lat="{{ $c->lat }}"
       data-lng="{{ $c->lng }}"
-      data-avatar="{{ $c->avatar_path ? asset($c->avatar_path) : $CUSTOMER_AVATAR_PLACEHOLDER }}"
+      {{-- corrige: caminho do storage para o avatar --}}
+      data-avatar="{{ $c->avatar_path ? asset('storage/'.$c->avatar_path) : $CUSTOMER_AVATAR_PLACEHOLDER }}"
+      {{-- novo: foto do local (somente visualização) --}}
+      data-place="{{ $c->place_path ? asset('storage/'.$c->place_path) : '' }}"
       data-bs-toggle="tooltip" title="{{ __('global.edit') }}">
       <i class="bi bi-pencil"></i>
     </button>
