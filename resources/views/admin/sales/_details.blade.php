@@ -12,7 +12,7 @@
 
   // avatar do cliente
   $cust = $sale->customer ?? null;
-  $avatar = $cust && !empty($cust->avatar_path) ? asset($cust->avatar_path) : 'https://via.placeholder.com/120?text=Avatar';
+  $avatar = $cust && !empty($cust->avatar_path) ? asset('storage/'.$cust->avatar_path) : 'https://via.placeholder.com/120?text=Avatar';
 
   // totais básicos
   $itemsTotal = $sale->items?->sum(function($it){
