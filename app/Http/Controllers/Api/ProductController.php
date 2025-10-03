@@ -9,7 +9,7 @@ class ProductController extends Controller
 {
     public function index()
     {
-        return Product::query()->select('id','name','model','color','size','price')->orderBy('name')->get();
+        return Product::orderBy('name')->get();
     }
 
     public function destroy(Product $product)

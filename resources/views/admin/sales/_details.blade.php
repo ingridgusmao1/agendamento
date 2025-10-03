@@ -90,6 +90,7 @@
               $qty = $it->qty ?? $it->quantity ?? 0;
               $price = $it->price ?? $it->unit_price ?? 0;
               $subtotal = (float)$qty * (float)$price;
+              $attrs = $it->attributes ?? null;
             @endphp
             <tr>
               <td>
@@ -99,7 +100,15 @@
                   <div class="bg-light border rounded d-flex align-items-center justify-content-center" style="width:64px;height:64px;">—</div>
                 @endif
               </td>
-              <td>{{ $prod->name ?? '-' }}</td>
+              <td>
+                {{ $prod->name ?? '-' }}
+                {{-- Exibir atributos abaixo do nome, se existirem --}}
+                @if(!empty($attrs) && is_array($attrs))
+                  <div class="text-muted small">
+                    Atributos: {{ implode(', ', $attrs) }}
+                  </div>
+                @endif
+              </td>
               <td class="text-end">{{ $qty }}</td>
               <td class="text-end">R$ {{ $money($price) }}</td>
               <td class="text-end">R$ {{ $money($subtotal) }}</td>
@@ -164,7 +173,7 @@
       </div>
     </div>
 
-    {{-- Pagamentos (agregado ou via parcelas) --}}
+    {{-- Pagamentos --}}
     <div class="col-12 col-lg-6">
       <div class="card h-100">
         <div class="card-header fw-semibold">{{ __('global.payments') }}</div>
