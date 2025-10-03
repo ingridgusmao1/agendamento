@@ -14,7 +14,7 @@
 <tr>
   <td style="width:120px">
     @php
-      $src = $c->avatar_path ? asset($c->avatar_path) : $CUSTOMER_AVATAR_PLACEHOLDER; // public/customers
+      $src = $c->avatar_path ? asset('storage/'.$c->avatar_path) : $CUSTOMER_AVATAR_PLACEHOLDER;
     @endphp
     <img src="{{ $src }}" alt="avatar" class="img-thumbnail"
          style="width:120px;height:120px;object-fit:cover;">
