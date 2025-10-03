@@ -12,7 +12,9 @@
 @forelse ($items as $s)
 @php
   $cust = $s->customer;
-  $custAvatar = $cust && $cust->avatar_path ? asset($cust->avatar_path) : 'https://via.placeholder.com/120?text=Avatar';
+  $custAvatar = $cust && $cust->avatar_path
+    ? asset('storage/'.$cust->avatar_path)
+    : 'https://via.placeholder.com/120?text=Avatar';
 @endphp
 <tr>
   {{-- avatar do cliente --}}
