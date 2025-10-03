@@ -215,4 +215,8 @@ return [
     'applied_filters' => 'Filtros aplicados',
     'report_footer_note' => 'Documento gerado automaticamente para conferência e impressão.',
     'financial_report' => 'Relatório Financeiro',
+    'click_to_zoom' => 'Clique para ampliar',
+    'click_to_view_on_map' => 'clique para ver no mapa',
+    'preview' => 'Miniatura',
+    'place_photo' => 'Foto do local',
 ];

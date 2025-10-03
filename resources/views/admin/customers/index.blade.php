@@ -93,6 +93,22 @@
     </form>
   </div>
 </div>
+
+{{-- Modal de Visualização de Imagem (avatar/local) --}}
+<div class="modal fade" id="modalImagePreview" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Visualização</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('global.close') }}"></button>
+      </div>
+      <div class="modal-body text-center">
+        <img id="imagePreviewTarget" src="" style="max-width:100%;max-height:70vh;object-fit:contain;">
+      </div>
+    </div>
+  </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -143,6 +159,14 @@
   $btnPrev.addEventListener('click', () => { if (page > 1){ page--; load(); } });
   $btnNext.addEventListener('click', () => { page++; load(); });
 
+  function openImageModal(src, title){
+    if (!src) return;
+    const $modal = document.getElementById('modalImagePreview');
+    $modal.querySelector('.modal-title').textContent = title || 'Visualização';
+    $modal.querySelector('#imagePreviewTarget').src = src;
+    new bootstrap.Modal($modal).show();
+  }
+
   function initEditButtons(){
     document.querySelectorAll('.btn-edit-customer').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -170,11 +194,35 @@
         set('lat',             btn.dataset.lat);
         set('lng',             btn.dataset.lng);
 
-        // Avatar exibido (se houver)
-        const $preview = $form.querySelector('[data-avatar-preview]');
-        if ($preview){
-          const src = btn.dataset.avatar ? btn.dataset.avatar : '';
-          $preview.src = src || 'https://via.placeholder.com/240?text=Avatar';
+        // Avatar preview
+        const $avatarPrev = $form.querySelector('[data-avatar-preview]');
+        if ($avatarPrev){
+          const src = btn.dataset.avatar || '';
+          $avatarPrev.src = src || 'https://via.placeholder.com/240?text=Avatar';
+          $avatarPrev.onclick = () => openImageModal($avatarPrev.src, 'Foto do cliente');
+        }
+
+        // Place preview (somente visualização)
+        const $placePrev = $form.querySelector('[data-place-preview]');
+        if ($placePrev){
+          const src = btn.dataset.place || '';
+          $placePrev.src = src || 'https://via.placeholder.com/240?text=Sem+Imagem';
+          $placePrev.onclick = () => { if (src) openImageModal(src, 'Foto do local'); };
+        }
+
+        // Link do Google Maps
+        const $maps = $form.querySelector('[data-maps-link]');
+        if ($maps){
+          const lat = btn.dataset.lat;
+          const lng = btn.dataset.lng;
+          if (lat && lng){
+            $maps.href = `https://www.google.com/maps?q=${lat},${lng}`;
+            $maps.classList.remove('disabled');
+            $maps.setAttribute('target','_blank');
+          } else {
+            $maps.href = '#';
+            $maps.classList.add('disabled');
+          }
         }
 
         new bootstrap.Modal(document.getElementById('modalEdit')).show();

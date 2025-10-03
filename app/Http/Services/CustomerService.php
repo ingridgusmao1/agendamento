@@ -5,6 +5,7 @@ namespace App\Http\Services;
 use App\Models\Customer;
 use Illuminate\Contracts\View\Factory as ViewFactory;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -13,54 +14,66 @@ class CustomerService
 {
     public function __construct(private ViewFactory $view) {}
 
-    /** Listagem com busca e paginação, retorna HTML das linhas */
-    public function fetch(string $q, int $page, int $perPage): array
+    /** ----------------------------------------------------------------
+     *  LISTAGEM AJAX (busca com paginação)
+     *  Compatível com:
+     *    - fetch(Request $request)
+     *    - fetch(string $q, int $page, int $perPage)
+     *  ---------------------------------------------------------------- */
+    public function fetch(Request|string $req, ?int $page = null, ?int $perPage = null): array
     {
-        $query = Customer::query();
+      if ($req instanceof Request) {
+          $q       = trim((string) $req->input('q', ''));
+          $page    = max(1, (int) ($req->input('page') ?? 1));
+          $perPage = max(1, (int) ($req->input('per_page') ?? $req->input('perPage', 10)));
+      } else {
+          $q       = trim((string) $req);
+          $page    = max(1, (int) ($page ?? 1));
+          $perPage = max(1, (int) ($perPage ?? 10));
+      }
 
-        if ($q !== '') {
-            $like = '%' . str_replace(['%','_'], ['\\%','\\_'], $q) . '%';
-            $query->where(function ($w) use ($like) {
-                $w->where('name', 'like', $like)
-                  ->orWhere('cpf', 'like', $like)
-                  ->orWhere('rg', 'like', $like)
-                  ->orWhere('phone', 'like', $like)
-                  ->orWhere('city', 'like', $like)
-                  ->orWhere('district', 'like', $like)
-                  ->orWhere('street', 'like', $like);
-            });
-        }
+      $query = Customer::query();
+      if ($q !== '') {
+          $query->where(function ($w) use ($q) {
+              $w->where('name', 'like', "%{$q}%")
+                ->orWhere('cpf', 'like', "%{$q}%")
+                ->orWhere('phone', 'like', "%{$q}%")
+                ->orWhere('city', 'like', "%{$q}%")
+                ->orWhere('district', 'like', "%{$q}%");
+          });
+      }
 
-        $total  = (clone $query)->count();
-        $items  = $query->orderBy('name')->forPage($page, $perPage)->get();
+      $total = (clone $query)->count();
+      $items = $query->orderBy('name')
+                     ->forPage($page, $perPage)
+                     ->get();
 
-        $html = $this->view->make('admin.customers._rows', ['items' => $items])->render();
+      $html = $this->view->make('admin.customers._rows', ['items' => $items])->render();
 
-        $hasMore = $total > ($page * $perPage);
-
-        return [
-            'html'    => $html,
-            'total'   => $total,
-            'page'    => $page,
-            'perPage' => $perPage,
-            'hasMore' => $hasMore,
-        ];
+      $hasMore = $total > ($page * $perPage);
+      return [
+          'html'     => $html,
+          'total'    => $total,
+          'page'     => $page,
+          'perPage'  => $perPage,
+          'hasMore'  => $hasMore,
+          'hasPrev'  => $page > 1,
+          'hasNext'  => $hasMore,
+      ];
     }
 
+    /** ----------------------------------------------------------------
+     *  CRIAÇÃO
+     *  ---------------------------------------------------------------- */
     public function store(Request $request): Customer
     {
         return DB::transaction(function () use ($request) {
-            $data = $request->only([
-                'name','street','number','district','city','reference_point',
-                'rg','cpf','phone','other_contact','lat','lng',
-            ]);
+            $customer = new Customer();
+            $this->fillFromRequest($customer, $request);
+            $customer->save(); // precisa do ID para nomear arquivo
 
-            /** @var Customer $customer */
-            $customer = Customer::create($data);
-
-            // avatar (opcional, único)
             if ($request->hasFile('avatar')) {
-                $path = $this->saveAvatar($customer, $request->file('avatar'));
+                $path = $this->storeAvatarFile($customer, $request->file('avatar'));
                 $customer->avatar_path = $path;
                 $customer->save();
             }
@@ -69,52 +82,111 @@ class CustomerService
         });
     }
 
+    /** ----------------------------------------------------------------
+     *  ATUALIZAÇÃO
+     *  ---------------------------------------------------------------- */
     public function update(Customer $customer, Request $request): Customer
     {
         return DB::transaction(function () use ($customer, $request) {
-            $data = $request->only([
-                'name','street','number','district','city','reference_point',
-                'rg','cpf','phone','other_contact','lat','lng',
-            ]);
-            $customer->fill($data)->save();
+            $oldName       = (string) $customer->name;
+            $oldAvatarPath = (string) ($customer->avatar_path ?? '');
 
-            // substituir avatar, se enviado
+            $this->fillFromRequest($customer, $request);
+            $customer->save();
+
             if ($request->hasFile('avatar')) {
-                // apaga antigo, se houver
-                if ($customer->avatar_path) {
-                    @unlink(public_path($customer->avatar_path));
-                }
-                $path = $this->saveAvatar($customer, $request->file('avatar'));
-                $customer->avatar_path = $path;
+                $this->deleteIfExists($oldAvatarPath);
+                $newPath = $this->storeAvatarFile($customer, $request->file('avatar'));
+                $customer->avatar_path = $newPath;
                 $customer->save();
+            } else {
+                // Mesmo sem upload novo, padroniza nome de arquivo:
+                //  - se o nome mudou OU
+                //  - se o caminho atual não bate com o esperado (migração do padrão antigo)
+                if ($oldAvatarPath) {
+                    $ext = pathinfo($oldAvatarPath, PATHINFO_EXTENSION) ?: 'jpg';
+                    $expected = $this->expectedAvatarPath($customer, $ext);
+                    if ($oldName !== $customer->name || $expected !== $oldAvatarPath) {
+                        $this->renameAvatarPath($customer, $oldAvatarPath, $expected);
+                    }
+                }
             }
 
             return $customer;
         });
     }
 
-    public function destroy(Customer $customer): void
+    /** Copia campos simples do Request para o model */
+    private function fillFromRequest(Customer $c, Request $r): void
     {
-        // remove avatar se houver
-        if ($customer->avatar_path) {
-            @unlink(public_path($customer->avatar_path));
-        }
-        $customer->delete();
+        $c->name            = $r->input('name',            $c->name);
+        $c->street          = $r->input('street',          $c->street);
+        $c->number          = $r->input('number',          $c->number);
+        $c->district        = $r->input('district',        $c->district);
+        $c->city            = $r->input('city',            $c->city);
+        $c->reference_point = $r->input('reference_point', $c->reference_point);
+        $c->rg              = $r->input('rg',              $c->rg);
+        $c->cpf             = $r->input('cpf',             $c->cpf);
+        $c->phone           = $r->input('phone',           $c->phone);
+        $c->other_contact   = $r->input('other_contact',   $c->other_contact);
+        $c->lat             = $r->input('lat',             $c->lat);
+        $c->lng             = $r->input('lng',             $c->lng);
     }
 
-    private function saveAvatar(Customer $customer, \Illuminate\Http\UploadedFile $file): string
+    /** ========= Nome esperado: CLIENTE-NOME-COM-HIFENS-EM-CAIXA-ALTA-ID.ext ========= */
+    private function expectedAvatarPath(Customer $customer, string $ext): string
     {
-        $dir = public_path('customers');
-        if (!is_dir($dir)) { mkdir($dir, 0755, true); }
+        $dir   = 'customers';
+        $base  = Str::slug((string) $customer->name, '-'); // ana-claudia
+        $base  = strtoupper($base);                        // ANA-CLAUDIA
+        if ($base === '') $base = 'CLIENTE';
+        return $dir . '/' . sprintf('%s-%s.%s', $base, $customer->id, strtolower($ext));
+    }
 
-        $ext   = strtolower($file->getClientOriginalExtension() ?: 'jpg');
-        $slug  = \Illuminate\Support\Str::slug((string) $customer->name) ?: 'cliente';
-        $fname = sprintf('%s-%s.%s', strtoupper($slug), $customer->id, $ext);
+    /** Salva avatar com o padrão de nome atualizado (hífens + ID) */
+    private function storeAvatarFile(Customer $customer, UploadedFile $file): string
+    {
+        $disk = Storage::disk('public');
+        $dir  = 'customers';
 
-        // grava em public/customers
-        $file->move($dir, $fname);
+        $ext = strtolower($file->getClientOriginalExtension() ?: 'jpg');
+        $path = $this->expectedAvatarPath($customer, $ext);
 
-        // salva no banco caminho relativo (igual aos products)
-        return 'customers/'.$fname;
+        if (!$disk->exists($dir)) {
+            $disk->makeDirectory($dir);
+        }
+        // putFileAs exige nome do arquivo apenas; vamos extraí-lo do $path
+        $filename = basename($path);
+        $disk->putFileAs($dir, $file, $filename);
+
+        return $path; // compatível com asset('storage/'.$path)
+    }
+
+    /** Move arquivo atual para o caminho esperado */
+    private function renameAvatarPath(Customer $customer, string $currentPath, string $expectedPath): void
+    {
+        $disk = Storage::disk('public');
+        if (!$currentPath || $currentPath === $expectedPath) return;
+
+        if ($disk->exists($currentPath)) {
+            $disk->makeDirectory(dirname($expectedPath));
+            $disk->move($currentPath, $expectedPath);
+            $customer->avatar_path = $expectedPath;
+            $customer->save();
+        } else {
+            // Arquivo antigo não existe; apenas ajusta o caminho salvo (evita ficar com referência quebrada)
+            $customer->avatar_path = $expectedPath;
+            $customer->save();
+        }
+    }
+
+    /** Apaga arquivo anterior, se existir */
+    private function deleteIfExists(?string $path): void
+    {
+        if (!$path) return;
+        $disk = Storage::disk('public');
+        if ($disk->exists($path)) {
+            $disk->delete($path);
+        }
     }
 }
