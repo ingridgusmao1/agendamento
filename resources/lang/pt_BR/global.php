@@ -213,7 +213,6 @@ return [
     'generate_report' => 'Gerar relatório (PDF)',
     'generated_at'    => 'Gerado em',
     'applied_filters' => 'Filtros aplicados',
-    'report_footer_note' => 'Documento gerado automaticamente para conferência e impressão.',
     'financial_report' => 'Relatório Financeiro',
     'click_to_zoom' => 'Clique para ampliar',
     'click_to_view_on_map' => 'clique para ver no mapa',
@@ -244,4 +243,10 @@ return [
     'filter_origin' => 'Origem das Vendas',
     'origin_store' => 'Da Loja',
     'origin_external' => 'Externo',
+    'origin_filter_aria' => 'Filtro de origem',
+    'all_results' => 'TUDO',
+    'only_store' => 'APENAS LOJA',
+    'only_external' => 'APENAS EXTERNO',
+    'normal' => 'Normal',
+    'showing_range' => 'Exibindo :first a :last de :total resultados',
 ];

@@ -291,3 +291,22 @@ select:invalid {
 
 .accordion-body { max-height: 320px; overflow: auto; padding-left: 1.25rem; }
 .accordion-body .form-check { padding: .25rem 0; margin-left: .25rem; }
+
+.table-installments tbody tr.table-warning-strong > * {
+  --bs-table-bg: #ffe066;         /* amarelo vivo (hoje) */
+  --bs-table-striped-bg: #ffe066;
+  --bs-table-hover-bg: #ffd24d;
+}
+
+.table-installments tbody tr.table-warning-light > * {
+  --bs-table-bg: #fffaf0;         /* amarelo ainda mais claro (≤5 dias) */
+  --bs-table-striped-bg: #fffaf0;
+  --bs-table-hover-bg: #fff2d6;
+}
+
+/* Se quiser um vermelho mais “alerta” que o padrão, descomente:
+.table-installments tbody tr.table-danger > * {
+  --bs-table-bg: #f8d7da;
+  --bs-table-striped-bg: #f8d7da;
+  --bs-table-hover-bg: #f1b0b7;
+}

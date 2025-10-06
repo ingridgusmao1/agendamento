@@ -5,7 +5,6 @@ namespace App\Http\Services;
 use App\Models\Installment;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Arr;
 
 class InstallmentScheduleService
 {
@@ -13,33 +12,33 @@ class InstallmentScheduleService
     public const TODAY   = 'today';
     public const SOON_3  = 'soon3';
     public const SOON_5  = 'soon5';
-    public const NONE    = 'none'; // > 5 dias
+    public const NONE    = 'none';
 
     /**
-     * @param array{status?:string|null, origins?:array<string>} $filters
+     * Filtros aceitos:
+     *  - origin: 'all' | 'store' | 'external'
      */
-    public function getFilteredInstallments(array $filters, int $perPage): LengthAwarePaginator
+    public function getFilteredInstallments(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
-        $today = Carbon::today();
+        $today  = Carbon::today();
+        $origin = $filters['origin'] ?? 'all';
+        if (!in_array($origin, ['all','store','external'], true)) {
+            $origin = 'all';
+        }
 
-        $query = Installment::with(['sale.customer', 'sale.seller'])
-            ->where('status', '!=', 'pago');
+        $query = Installment::query()
+            ->with([
+                // venda, vendedor e cliente
+                'sale:id,number,seller_id,gps_lat,gps_lng,customer_id',
+                'sale.seller:id,store_mode',
+                'sale.customer:id,name',
+            ]);
 
         // ----------------------------
-        // Filtro por ORIGEM (Loja / Externo)
+        // Filtro LOJA / EXTERNO
         // ----------------------------
-        // Aceita 'origins' como string|array|null e normaliza para array
-        $origins = Arr::wrap($filters['origins'] ?? ['store', 'external']);
-
-        $hasStore    = in_array('store', $origins, true);
-        $hasExternal = in_array('external', $origins, true);
-
-
-        if (!$hasStore && !$hasExternal) {
-            // nada selecionado -> não retorna nenhum registro
-            $query->whereRaw('1=0');
-        } elseif ($hasStore && !$hasExternal) {
-            // Somente LOJA
+        if ($origin === 'store') {
+            // LOJA: gps nulos E seller.store_mode = 'loja'
             $query->whereHas('sale', function ($s) {
                 $s->whereNull('gps_lat')
                   ->whereNull('gps_lng')
@@ -47,8 +46,8 @@ class InstallmentScheduleService
                       $u->where('store_mode', 'loja');
                   });
             });
-        } elseif (!$hasStore && $hasExternal) {
-            // Somente EXTERNO (complemento da regra da loja)
+        } elseif ($origin === 'external') {
+            // EXTERNO: tem gps OU seller.store_mode != 'loja' (ou nulo)
             $query->where(function ($q) {
                 $q->whereHas('sale', function ($s) {
                     $s->whereNotNull('gps_lat')
@@ -59,50 +58,29 @@ class InstallmentScheduleService
                 });
             });
         }
-        // se ambos marcados, não filtra (mostra tudo)
+        // origin = 'all' => sem filtro adicional
 
         // ----------------------------
-        // Filtro por FAIXA de vencimento (status visual)
+        // Paginação (preserva filtros) + ordenação
         // ----------------------------
-        $range = $filters['status'] ?? null;
-        if ($range) {
-            $start = $today->copy()->startOfDay();
-            $end3  = $today->copy()->addDays(3)->endOfDay();
-            $end5  = $today->copy()->addDays(5)->endOfDay();
-
-            switch ($range) {
-                case self::OVERDUE: // vencidas
-                    $query->where('due_date', '<', $start);
-                    break;
-                case self::TODAY:   // do dia
-                    $query->whereBetween('due_date', [$start, $start->copy()->endOfDay()]);
-                    break;
-                case self::SOON_3:  // até 3 dias
-                    $query->whereBetween('due_date', [$today->copy()->addDay()->startOfDay(), $end3]);
-                    break;
-                case self::SOON_5:  // 4 a 5 dias
-                    $query->whereBetween('due_date', [$today->copy()->addDays(4)->startOfDay(), $end5]);
-                    break;
-                case 'others':      // > 5 dias
-                    $query->where('due_date', '>', $end5);
-                    break;
-            }
-        }
-
         $paginator = $query
             ->orderBy('due_date', 'asc')
-            ->paginate($perPage);
+            ->paginate($perPage)
+            ->withQueryString();
 
-        // adiciona a classificação visual (highlight) para a view
+        // ----------------------------
+        // Marca visual (highlight) para a view
+        // ----------------------------
         $paginator->getCollection()->transform(function ($i) use ($today) {
-            $due  = $i->due_date instanceof Carbon ? $i->due_date->copy()->startOfDay() : Carbon::parse($i->due_date)->startOfDay();
+            $due  = $i->due_date instanceof Carbon ? $i->due_date->copy()->startOfDay()
+                                                   : Carbon::parse($i->due_date)->startOfDay();
             $diff = $today->diffInDays($due, false);
 
-            if ($diff < 0)   { $i->highlight = self::OVERDUE; }
-            elseif ($diff === 0) { $i->highlight = self::TODAY; }
-            elseif ($diff <= 3)  { $i->highlight = self::SOON_3; }
-            elseif ($diff <= 5)  { $i->highlight = self::SOON_5; }
-            else                 { $i->highlight = self::NONE; }
+            if     ($diff < 0)  { $i->highlight = self::OVERDUE; }
+            elseif ($diff === 0){ $i->highlight = self::TODAY; }
+            elseif ($diff <= 3) { $i->highlight = self::SOON_3; }
+            elseif ($diff <= 5) { $i->highlight = self::SOON_5; }
+            else                { $i->highlight = self::NONE; }
 
             return $i;
         });

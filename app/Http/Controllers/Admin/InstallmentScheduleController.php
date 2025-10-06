@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Services\InstallmentScheduleService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 
 class InstallmentScheduleController extends Controller
 {
@@ -12,16 +13,16 @@ class InstallmentScheduleController extends Controller
 
     public function index(Request $request, InstallmentScheduleService $service)
     {
-        $filters = [
-            'status' => $request->get('status'),
-            'origins' => $request->get('origins', ['store', 'external']),
-        ];
+        $origin = $request->query('origin', 'all');
+        if (!in_array($origin, ['all','store','external'], true)) {
+            $origin = 'all';
+        }
+
+        $filters = ['origin' => $origin];
 
         $installments = $service->getFilteredInstallments($filters, self::PER_PAGE);
 
-        return view('admin.installments_schedule.index', [
-            'installments' => $installments,
-            'filters' => $filters,
-        ]);
+        return view('admin.installments_schedule.index', compact('installments','filters'));
     }
+
 }

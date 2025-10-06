@@ -2,96 +2,78 @@
 
 @section('content')
 @php
-    use Illuminate\Support\Arr;
-
-    // Normaliza 'origins' vindo da query. Se não houver nada na URL, default = ambos.
-    $origins = Arr::wrap(request()->input('origins', request()->has('origins') ? [] : ['store','external']));
+    $origin = $filters['origin'] ?? 'all';
 @endphp
 
-<style>
-  /* Rosa para “perto de vencer” */
-  .table-rose      { background-color: #ffe5ec !important; }
-  .table-rose-soft { background-color: #fff0f4 !important; }
-</style>
+<div class="container-xxl">
+  <form id="filtersForm" method="GET" action="{{ route('admin.installments-schedule.index') }}" class="mb-3">
+    <div class="btn-group" role="group" aria-label="@lang('global.origin_filter_aria')">
+      <input type="radio" class="btn-check" name="origin" id="origin_all" value="all" autocomplete="off" {{ $origin==='all' ? 'checked' : '' }}>
+      <label class="btn btn-outline-secondary" for="origin_all">@lang('global.all_results')</label>
 
-<div class="container-fluid mt-3">
-  <h4 class="mb-3">{{ __('global.installments_schedule_title') }}</h4>
+      <input type="radio" class="btn-check" name="origin" id="origin_store" value="store" autocomplete="off" {{ $origin==='store' ? 'checked' : '' }}>
+      <label class="btn btn-outline-secondary" for="origin_store">@lang('global.only_store')</label>
 
-  <!-- Filtros (APENAS checkboxes) -->
-  <form id="filtersForm" class="row g-3 mb-4" method="GET">
-    <div class="col-md-12">
-      <label class="form-label d-block">{{ __('global.filter_origin') }}</label>
-
-      <div class="form-check form-check-inline">
-        <input
-          class="form-check-input"
-          type="checkbox"
-          id="filterStore"
-          name="origins[]"
-          value="store"
-          {{ in_array('store', $origins, true) ? 'checked' : '' }}
-        >
-        <label class="form-check-label" for="filterStore">{{ __('global.origin_store') }}</label>
-      </div>
-
-      <div class="form-check form-check-inline">
-        <input
-          class="form-check-input"
-          type="checkbox"
-          id="filterExternal"
-          name="origins[]"
-          value="external"
-          {{ in_array('external', $origins, true) ? 'checked' : '' }}
-        >
-        <label class="form-check-label" for="filterExternal">{{ __('global.origin_external') }}</label>
-      </div>
+      <input type="radio" class="btn-check" name="origin" id="origin_external" value="external" autocomplete="off" {{ $origin==='external' ? 'checked' : '' }}>
+      <label class="btn btn-outline-secondary" for="origin_external">@lang('global.only_external')</label>
     </div>
   </form>
 
-  <!-- Tabela -->
   <div class="table-responsive">
-    <table class="table table-striped align-middle" id="installmentsTable">
+    <table class="table table-installments align-middle">
       <thead class="table-dark">
         <tr>
-          <th>{{ __('global.customer') }}</th>
-          <th>{{ __('global.sale_number') }}</th>
-          <th>{{ __('global.amount') }}</th>
-          <th>{{ __('global.due_date') }}</th>
-          <th>{{ __('global.status') }}</th>
+          <th>@lang('global.customer')</th>
+          <th>@lang('global.sale')</th>
+          <th>@lang('global.amount')</th>
+          <th>@lang('global.due_date')</th>
+          <th>@lang('global.status')</th>
         </tr>
       </thead>
       <tbody>
-        @forelse ($installments as $i)
-          <tr class="@switch($i->highlight)
-              @case(\App\Http\Services\InstallmentScheduleService::OVERDUE) table-danger @break
-              @case(\App\Http\Services\InstallmentScheduleService::TODAY)   table-warning @break
-              @case(\App\Http\Services\InstallmentScheduleService::SOON_3)  table-rose @break
-              @case(\App\Http\Services\InstallmentScheduleService::SOON_5)  table-rose-soft @break
-              @default ''
-          @endswitch">
+        @forelse($installments as $i)
+          @php
+            $rowClass = match($i->highlight ?? '') {
+              'overdue' => 'table-danger',          // Atrasado
+              'today'   => 'table-warning-strong',  // Vence hoje
+              'soon3'   => 'table-warning',         // ≤ 3 dias
+              'soon5'   => 'table-warning-light',   // ≤ 5 dias
+              default   => '',
+            };
+          @endphp
+          <tr class="{{ $rowClass }}">
             <td>{{ $i->sale->customer->name ?? '-' }}</td>
-            <td>{{ $i->sale->id }}</td>
-            <td>R$ {{ number_format($i->amount, 2, ',', '.') }}</td>
-            <td>{{ \Carbon\Carbon::parse($i->due_date)->format('d/m/Y') }}</td>
-            <td>{{ __($i->status) }}</td>
+            <td>{{ $i->sale->number ?? '-' }}</td>
+            <td>{{ number_format($i->amount, 2, ',', '.') }}</td>
+            <td>{{ optional($i->due_date)->format('d/m/Y') }}</td>
+            <td>
+              @switch($i->highlight)
+                @case('overdue') @lang('global.overdue') @break
+                @case('today')   @lang('global.due_today') @break
+                @case('soon3')   @lang('global.due_in_3_days') @break
+                @case('soon5')   @lang('global.due_in_5_days') @break
+                @default         @lang('global.normal')
+              @endswitch
+            </td>
           </tr>
         @empty
-          <tr><td colspan="5" class="text-center text-muted">{{ __('global.no_results') }}</td></tr>
+          <tr><td colspan="5" class="text-center text-muted">@lang('global.no_results')</td></tr>
         @endforelse
       </tbody>
     </table>
   </div>
 
-  <!-- Paginação + resumo em PT-BR -->
   <div class="mt-3" id="paginationWrap">
     @if ($installments->count())
-    <p class="text-muted small mb-1">
-        Exibindo {{ $installments->firstItem() }} a {{ $installments->lastItem() }}
-        de {{ $installments->total() }} resultados
-    </p>
+      <p class="text-muted small mb-1">
+        {{ __('global.showing_range', [
+            'first' => $installments->firstItem(),
+            'last'  => $installments->lastItem(),
+            'total' => $installments->total()
+        ]) }}
+      </p>
     @endif
 
-    {{-- Somente os links de paginação, sem o texto padrão em inglês --}}
     {{ $installments->onEachSide(1)->links('vendor.pagination.bootstrap-5-nosummary') }}
   </div>
 </div>
@@ -99,75 +81,19 @@
 
 @push('scripts')
 <script>
-(function(jq){
-  // ready seguro mesmo com noConflict/defer
-  function ready(fn){
-    if (jq) { jq(fn); return; }
-    if (document.readyState !== 'loading') fn();
-    else document.addEventListener('DOMContentLoaded', fn);
-  }
-
-  ready(function(){
-    var $ = jq || window.jQuery;
-
-    var $store    = $('#filterStore');
-    var $external = $('#filterExternal');
-    var $tbody    = $('#installmentsTable tbody');
-    var $pagi     = $('#paginationWrap');
-
-    function buildQueryKeepingOthers(selected){
-      // selected: ['store'] | ['external'] | ['store','external']
-      var params = new URLSearchParams(window.location.search);
-
-      // Remover paginação e qualquer forma anterior de origins
-      params.delete('page');
-      var fresh = new URLSearchParams();
-      params.forEach(function(v,k){
-        if (k !== 'origins' && k !== 'origins[]') {
-          fresh.append(k, v);
-        }
-      });
-
-      // IMPORTANTÍSSIMO: usar 'origins[]' para múltiplos valores
-      selected.forEach(function(origin){
-        fresh.append('origins[]', origin);
-      });
-
-      return fresh.toString();
-    }
-
-    function applyFilters(){
-      var isStore    = $store.is(':checked');
-      var isExternal = $external.is(':checked');
-
-      // 0 marcados -> não bate no backend; limpa no front
-      if (!isStore && !isExternal) {
-        $tbody.html('<tr><td colspan="5" class="text-center text-muted">{{ __('global.no_results') }}</td></tr>');
-        $pagi.hide();
-        return;
-      }
-
-      var selected = [];
-      if (isStore)    selected.push('store');
-      if (isExternal) selected.push('external');
-
-      var qs   = buildQueryKeepingOthers(selected);
-      var href = qs ? (window.location.pathname + '?' + qs) : window.location.pathname;
-
-      window.location.assign(href);
-    }
-
-    $store.on('change', applyFilters);
-    $external.on('change', applyFilters);
-
-    // Estado inicial da UI se, por algum motivo, chegou com ambos desmarcados
-    if (!$store.is(':checked') && !$external.is(':checked')) {
-      $tbody.html('<tr><td colspan="5" class="text-center text-muted">{{ __('global.no_results') }}</td></tr>');
-      $pagi.hide();
-    } else {
-      $pagi.show();
+(function() {
+  const form = document.getElementById('filtersForm');
+  form.addEventListener('change', function(e) {
+    if (e.target && e.target.name === 'origin') {
+      Array.from(form.querySelectorAll('input[name="page"]')).forEach(n => n.remove());
+      const p = document.createElement('input');
+      p.type  = 'hidden';
+      p.name  = 'page';
+      p.value = '1';
+      form.appendChild(p);
+      form.submit();
     }
   });
-})(window.jQuery || window.$);
+})();
 </script>
 @endpush
