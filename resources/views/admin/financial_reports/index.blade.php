@@ -269,7 +269,15 @@
               $seller   = $sale->seller;
               $city     = $customer->city ?? '-';
               $col      = $payment_column ?? 'note';
-              $methods  = collect($sale->payments ?? [])->pluck($col)->filter()->unique()->implode(', ');
+              $methods = collect($sale->payments ?? [])->pluck('payment_method')->map(function($method) {
+                  return match($method) {
+                    'pix' => 'PIX',
+                    'credito' => 'CRÉDITO',
+                    'debito' => 'DÉBITO',
+                    'dinheiro' => 'ESPÉCIE',
+                    default => $method,
+                  };
+              })->filter()->unique()->implode(', ');
               $prods    = collect($sale->items ?? [])
                             ->map(fn($it) => $it->product->name ?? '')
                             ->filter()

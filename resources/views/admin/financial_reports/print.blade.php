@@ -54,7 +54,7 @@
         <th>{{ __('global.customer') }}</th>
         <th>{{ __('global.seller') }}</th>
         <th>{{ __('global.product_plural') }}</th>
-        <th>{{ __('global.payment_method') }}</th>
+        <th>{{ __('global.note') }}</th>
         <th>{{ __('global.city') }}</th>
         <th>{{ __('global.date_range') }}</th>
       </tr>
@@ -82,7 +82,5 @@
       @endforeach
     </tbody>
   </table>
-
-  <footer>{{ __('global.report_footer_note') }}</footer>
 </body>
 </html>
