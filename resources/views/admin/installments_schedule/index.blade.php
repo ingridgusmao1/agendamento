@@ -44,7 +44,7 @@
           <tr class="{{ $rowClass }}">
             <td>{{ $i->sale->customer->name ?? '-' }}</td>
             <td>{{ $i->sale->number ?? '-' }}</td>
-            <td>{{ number_format($i->amount, 2, ',', '.') }}</td>
+            <td>{{ number_format(max(0, $i->amount - ($i->paid_total ?? 0)), 2, ',', '.') }}</td>
             <td>{{ optional($i->due_date)->format('d/m/Y') }}</td>
             <td>
               @switch($i->highlight)
