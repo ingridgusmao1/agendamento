@@ -47,5 +47,14 @@
       </div>
     </div>
   </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm pm-card">
+      <div class="card-body">
+        <h5 class="card-title pm-card-title">{{ __('global.installment_schedule') }}</h5>
+        <p class="text-muted">{{ __('global.installment_schedule_caption') }}</p>
+        <a href="{{ route('admin.installments-schedule.index') }}" class="btn pm-btn pm-btn-primary">{{ __('global.open') }}</a>
+      </div>
+    </div>
+  </div>
 </div>
 @endsection

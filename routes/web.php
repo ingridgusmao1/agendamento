@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\ProductAdminController;
 use App\Http\Controllers\Admin\UserAdminController;
 use App\Http\Controllers\Admin\CustomerAdminController;
 use App\Http\Controllers\Admin\SaleAdminController;
+use App\Http\Controllers\Admin\InstallmentScheduleController;
 
 Route::get('/', fn() => redirect()->route('admin.dashboard'));
 
@@ -86,4 +87,10 @@ Route::prefix('admin')->middleware(['auth','ensure.usertype:admin'])->name('admi
     // Relatórios financeiros
     Route::get('/financial-reports', [SaleAdminController::class, 'financialReports'])->name('financial-reports.index');
     Route::get('/admin/financial-reports/print', [SaleAdminController::class, 'financialReportsPdf'])->name('financial-reports.print');
+
+    //------------------------------------------------------------------------------------------------------------------------
+
+    // Cronograma de parcelas (atrasadas, do dia, próximas etc.)
+    Route::get('/installments/schedule', [InstallmentScheduleController::class, 'index'])
+        ->name('installments-schedule.index');
 });
