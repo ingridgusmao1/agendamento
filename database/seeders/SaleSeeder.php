@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use App\Models\{User, Customer, Product, Sale};
+use App\Http\Services\SaleService;
 
 class SaleSeeder extends Seeder
 {
@@ -16,25 +17,10 @@ class SaleSeeder extends Seeder
         $products  = Product::orderBy('id')->get();
 
         if ($sellers->isEmpty() || $customers->isEmpty() || $products->isEmpty()) {
-            $this->command?->warn('⚠️ Faltam users/customers/products para gerar sales.');
             return;
         }
 
-        // Centros no Nordeste
-        $centers = [
-            ['lat' => -3.7319,  'lng' => -38.5267], // Fortaleza
-            ['lat' => -5.7945,  'lng' => -35.2110], // Natal
-            ['lat' => -8.0476,  'lng' => -34.8770], // Recife
-            ['lat' => -9.6658,  'lng' => -35.7353], // Maceió
-            ['lat' => -10.9472, 'lng' => -37.0731], // Aracaju
-            ['lat' => -12.9777, 'lng' => -38.5016], // Salvador
-            ['lat' => -7.1195,  'lng' => -34.8450], // João Pessoa
-            ['lat' => -5.0919,  'lng' => -42.8034], // Teresina
-            ['lat' => -2.5391,  'lng' => -44.2825], // São Luís
-        ];
-        $jitter = fn(float $v) => $v + mt_rand(-15, 15) / 100; // ±0.15°
-
-        $obs       = [
+        $obs = [
             'Cobrar no posto de gasolina',
             'Entregar na casa da sogra',
             'Cliente trabalha à tarde, cobrar de manhã',
@@ -44,101 +30,91 @@ class SaleSeeder extends Seeder
             'Cliente bom pagador',
             'Combinar com vizinho se ausente',
         ];
-        $entregas  = ['final do mês','segunda semana do mês','sábado pela manhã','após as 17h','em até 10 dias'];
 
+        $entregas   = ['final do mês','segunda semana do mês','sábado pela manhã','após as 17h','em até 10 dias'];
         $totalVendas = 60;
-        $today       = Carbon::today()->startOfDay();
-
-        // Distribuição desejada do PRIMEIRO vencimento por venda:
-        // ~10% atrasado, ~30% hoje, ~25% +3d, ~20% +5d, ~15% futuro (>5d)
-        $bucketFor = function(int $n) {
-            $r = ($n * 37) % 100; // pseudo-aleatório determinístico por n
-            return match (true) {
-                $r < 10   => 'overdue',   // 10%
-                $r < 40   => 'today',     // 30%
-                $r < 65   => 'plus3',     // 25%
-                $r < 85   => 'plus5',     // 20%
-                default   => 'future',    // 15%
-            };
-        };
-
-        $targetDateFor = function(string $bucket, Carbon $today) {
-            return match ($bucket) {
-                'overdue' => $today->copy()->subDays(mt_rand(1, 3)),   // pouco atrasado
-                'today'   => $today->copy(),
-                'plus3'   => $today->copy()->addDays(3),
-                'plus5'   => $today->copy()->addDays(5),
-                'future'  => $today->copy()->addDays(mt_rand(8, 25)),
-            };
-        };
+        $baseData    = Carbon::today();
 
         for ($n = 1; $n <= $totalVendas; $n++) {
-            $customerId = $customers[($n-1) % $customers->count()];
-            $sellerId   = $sellers[  ($n-1) % $sellers->count()  ];
+            $customerId = $customers[($n - 1) % count($customers)];
+            $sellerId   = $sellers[($n - 1) % count($sellers)];
+            $seller     = User::find($sellerId);
 
-            // itens 1..3
-            $items = [];
-            $qtdItens = 1 + ($n % 3);
+            // Determina o GPS conforme o tipo do vendedor
+            $gpsLat = null;
+            $gpsLng = null;
+
+            if ($seller && $seller->store_mode !== 'loja') {
+                $isExternal = $seller->store_mode === 'externo' ? true : (rand(0, 1) === 1);
+                if ($isExternal) {
+                    // Coordenadas fictícias realistas do Nordeste (variação leve)
+                    $baseCoords = [
+                        ['lat' => -8.0476, 'lng' => -34.8770], // Recife
+                        ['lat' => -7.1200, 'lng' => -34.8800], // João Pessoa
+                        ['lat' => -9.6498, 'lng' => -35.7089], // Maceió
+                        ['lat' => -10.9472, 'lng' => -37.0731], // Aracaju
+                        ['lat' => -7.2307, 'lng' => -35.8811], // Campina Grande
+                        ['lat' => -5.7945, 'lng' => -35.2110], // Natal
+                    ];
+                    $pick = collect($baseCoords)->random();
+                    $gpsLat = $pick['lat'] + (rand(-50, 50) / 1000);
+                    $gpsLng = $pick['lng'] + (rand(-50, 50) / 1000);
+                }
+            }
+
+            // Itens determinísticos: 1..3 produtos
+            $itens = [];
+            $qtdItens = 1 + (($n % 3)); // 1..3
             for ($k = 0; $k < $qtdItens; $k++) {
-                $p = $products[($n+$k-1) % $products->count()];
-                $items[] = [
+                $p = $products[($n + $k - 1) % $products->count()];
+                $itens[] = [
                     'product_id' => $p->id,
                     'qty'        => 1 + (($n + $k) % 2), // 1..2
                     'unit_price' => $p->price,
-                    'attributes' => ['cor' => $p->color, 'modelo' => $p->model],
+                    'attributes' => ['cor' => $p->color ?? 'padrão', 'modelo' => $p->model ?? 'N/A'],
                 ];
             }
-            $total = collect($items)->sum(fn($i) => $i['qty'] * $i['unit_price']);
+            $total = collect($itens)->sum(fn($i) => $i['qty'] * $i['unit_price']);
 
-            // bucket → primeiro vencimento alvo
-            $bucket     = $bucketFor($n);
-            $firstDue   = $targetDateFor($bucket, $today);
-            $dueDay     = min(28, (int)$firstDue->day); // cap a 28
-            // Para que o primeiro vencimento caia exatamente em $firstDue:
-            // defina charge_start_date para um dia ANTES do due (assim o algoritmo do InstallmentSeeder acerta o 1º vencimento)
-            $chargeStart = $firstDue->copy()->subDay(); // start < firstDue e no mesmo mês
-            $createdAt   = $chargeStart->copy()->subDays(rand(0, 5));
-
-            // GPS NE
-            $c   = $centers[array_rand($centers)];
-            $lat = $jitter($c['lat']);
-            $lng = $jitter($c['lng']);
+            $dueDay  = 5 + ($n % 20); // 5..24
+            $resched = ($n % 10 == 0) ? ($dueDay + 2 <= 28 ? $dueDay + 2 : null) : null;
 
             DB::transaction(function () use (
                 $n,
                 $customerId,
                 $sellerId,
-                $items,
+                $itens,
                 $total,
                 $dueDay,
-                $chargeStart,
-                $entregas,
+                $resched,
+                $baseData,
                 $obs,
-                $lat,
-                $lng,
-                $createdAt   // 👈 ADICIONE ESTA LINHA
+                $entregas,
+                $gpsLat,
+                $gpsLng
             ) {
                 $sale = Sale::create([
-                    'number'            => 'N'.str_pad($n, 5, '0', STR_PAD_LEFT),
+                    'number'            => 'N' . str_pad($n, 5, '0', STR_PAD_LEFT),
                     'customer_id'       => $customerId,
                     'seller_id'         => $sellerId,
                     'total'             => $total,
                     'installments_qty'  => 6 + ($n % 7), // 6..12
                     'due_day'           => $dueDay,
-                    'rescheduled_day'   => null,
-                    'charge_start_date' => $chargeStart->toDateString(),
+                    'rescheduled_day'   => $resched,
+                    'charge_start_date' => $baseData->copy()->addDays($n)->toDateString(),
                     'delivery_text'     => $entregas[$n % count($entregas)],
-                    'gps_lat'           => $lat,
-                    'gps_lng'           => $lng,
+                    'gps_lat'           => $gpsLat,
+                    'gps_lng'           => $gpsLng,
                     'collection_note'   => $obs[$n % count($obs)],
                     'status'            => 'aberto',
-                    'created_at'        => $createdAt,
-                    'updated_at'        => now(),
                 ]);
 
-                foreach ($items as $i) {
+                foreach ($itens as $i) {
                     $sale->items()->create($i);
                 }
+
+                // Cria parcelas com lógica posterior no InstallmentSeeder
+                SaleService::createInstallments($sale);
             });
         }
     }

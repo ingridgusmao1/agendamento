@@ -8,17 +8,20 @@ use Illuminate\Http\Request;
 
 class InstallmentScheduleController extends Controller
 {
-    public function __construct(
-        private readonly InstallmentScheduleService $service
-    ) {}
+    private const PER_PAGE = 50;
 
-    public function index(Request $request)
+    public function index(Request $request, InstallmentScheduleService $service)
     {
-        // valores aceitos: overdue | today | soon3 | soon5 | others | (null)
-        $filter = $request->query('filter');
+        $filters = [
+            'status' => $request->get('status'),
+            'origins' => $request->get('origins', ['store', 'external']),
+        ];
 
-        $installments = $this->service->pendingChronologicalWithHighlight($filter);
+        $installments = $service->getFilteredInstallments($filters, self::PER_PAGE);
 
-        return view('admin.installments_schedule.index', compact('installments', 'filter'));
+        return view('admin.installments_schedule.index', [
+            'installments' => $installments,
+            'filters' => $filters,
+        ]);
     }
 }

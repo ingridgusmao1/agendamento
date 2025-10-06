@@ -235,4 +235,13 @@ return [
     'others_future'   => 'Demais (> 5 dias)',
     'apply_filter'    => 'Filtrar',
     'clear_filter'    => 'Limpar',
+    'installments_schedule_title' => 'Agenda de Parcelas',
+    'filter_status' => 'Filtrar por status',
+    'all_statuses' => 'Todos os status',
+    'status_pending' => 'Pendente',
+    'status_paid' => 'Pago',
+    'status_overdue' => 'Atrasado',
+    'filter_origin' => 'Origem das Vendas',
+    'origin_store' => 'Da Loja',
+    'origin_external' => 'Externo',
 ];
