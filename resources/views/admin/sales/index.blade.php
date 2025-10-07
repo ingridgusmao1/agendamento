@@ -74,6 +74,9 @@
     </div>
   </div>
 </div>
+
+{{-- Container para injetar o modal secundário de pagamento da parcela --}}
+<div id="paymentModalContainer"></div>
 @endsection
 
 @push('scripts')
@@ -83,19 +86,20 @@
   window.initTooltips ??= function(){
     if (!window.bootstrap || !bootstrap.Tooltip) return;
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
-      // (opcional) reaplica sem vazar instâncias
       if (el._tooltipInstance) { el._tooltipInstance.dispose(); }
       el._tooltipInstance = new bootstrap.Tooltip(el);
     });
   };
 
-  const $q      = document.querySelector('input[name="q"]');
-  const $per    = document.getElementById('perPage');
-  const $tbody  = document.getElementById('tbodyRows');
-  const $btnPrev= document.getElementById('btnPrevP');
-  const $btnNext= document.getElementById('btnNextP');
-  const $range  = document.getElementById('range');
-  const $status = document.getElementById('filterStatus');
+  const $q       = document.querySelector('input[name="q"]');
+  const $per     = document.getElementById('perPage');
+  const $tbody   = document.getElementById('tbodyRows');
+  const $btnPrev = document.getElementById('btnPrevP');
+  const $btnNext = document.getElementById('btnNextP');
+  const $range   = document.getElementById('range');
+  const $status  = document.getElementById('filterStatus');
+  const $detailsBody = document.getElementById('detailsBody');
+  const $paymentContainer = document.getElementById('paymentModalContainer');
   let page = 1;
 
   async function load(){
@@ -113,7 +117,7 @@
     $tbody.innerHTML = meta.html || '';
     updatePager(meta);
     updateRange(meta);
-    bindRowButtons();
+    bindRowButtons();   // rebind para novos rows
     initTooltips?.();
   }
 
@@ -137,12 +141,92 @@
         const url = "{{ route('admin.sales.show', ':id') }}".replace(':id', id);
         const r = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }});
         const data = await r.json();
-        document.getElementById('detailsBody').innerHTML = data.html || '';
+        $detailsBody.innerHTML = data.html || '';
         new bootstrap.Modal(document.getElementById('modalDetails')).show();
+        // Reaplica tooltips dentro do modal carregado
+        initTooltips?.();
       });
     });
   }
 
+  // === Fluxo do modal de pagamento da parcela ===
+  // Delegação global: funciona para conteúdo carregado via AJAX (detalhes)
+  document.body.addEventListener('click', function (e) {
+    const a = e.target.closest('.js-open-payment-modal');
+    if (!a) return;
+
+    e.preventDefault();
+
+    const saleId = a.getAttribute('data-sale-id');
+    const instId = a.getAttribute('data-installment-id');
+
+    // Monta URL do modal parcial (GET)
+    const urlTpl = @json(route('admin.sales.installments.payment.modal', ['sale' => 'SALE_ID', 'installment' => 'INST_ID']));
+    const url = urlTpl.replace('SALE_ID', saleId).replace('INST_ID', instId);
+
+    fetch(url, { credentials: 'same-origin' })
+      .then(r => {
+        if (!r.ok) throw new Error('Falha ao carregar modal');
+        return r.text();
+      })
+      .then(html => {
+        $paymentContainer.innerHTML = html;
+
+        // Abre o modal Bootstrap injetado
+        const modalEl = $paymentContainer.querySelector('.modal');
+        const bsModal = new bootstrap.Modal(modalEl);
+        bsModal.show();
+
+        const form = modalEl.querySelector('form#paymentForm');
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const amountInput = form.querySelector('input[name="amount"]');
+        const maxRemaining = parseFloat(amountInput.getAttribute('max') || '0');
+
+        // Validação simples: não deixa ultrapassar o restante e exige > 0
+        function validate() {
+          let v = parseFloat(amountInput.value || '0');
+          if (v > maxRemaining) {
+            v = maxRemaining;
+            amountInput.value = maxRemaining.toFixed(2);
+          }
+          submitBtn.disabled = !(v > 0 && v <= maxRemaining);
+        }
+        amountInput.addEventListener('input', validate);
+        validate();
+
+        // Submit AJAX
+        form.addEventListener('submit', function (ev) {
+          ev.preventDefault();
+          const postUrl = form.getAttribute('action');
+          const formData = new FormData(form);
+
+          fetch(postUrl, {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest',
+              'X-CSRF-TOKEN': form.querySelector('input[name="_token"]').value,
+            },
+            credentials: 'same-origin',
+          })
+          .then(r => r.json())
+          .then(json => {
+            if (!json || json.ok !== true) {
+              alert((json && json.message) ? json.message : 'Não foi possível registrar o pagamento.');
+              return;
+            }
+            bsModal.hide();
+            // Refresh da página após sucesso (como solicitado)
+            window.location.reload();
+          })
+          .catch(() => alert('Erro ao enviar pagamento.'));
+        });
+      })
+      .catch(() => alert('Erro ao abrir modal de pagamento.'));
+  }, false);
+  // === fim fluxo modal pagamento ===
+
+  // Filtros e paginação
   $q.addEventListener('input',   () => { page = 1; load(); });
   $per.addEventListener('change',() => { page = 1; load(); });
   $status.addEventListener('change', () => { page = 1; load(); });

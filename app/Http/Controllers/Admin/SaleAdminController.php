@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Services\SaleService;
 use App\Http\Services\SaleReportService;
+use App\Http\Services\PaymentService;
 use App\Http\Validators\SaleValidator;
 use App\Models\Sale;
+use App\Models\Installment;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 
 class SaleAdminController extends Controller
 {
@@ -82,5 +85,63 @@ class SaleAdminController extends Controller
         ])->setPaper('a4', 'landscape'); // paisagem fica melhor para tabelas largas
 
         return $pdf->stream('relatorio-financeiro-'.now()->format('Y-m-d_H-i').'.pdf');
+    }
+
+    public function paymentModal(Sale $sale, Installment $installment)
+    {
+        if ($installment->sale_id !== $sale->id) {
+            abort(404);
+        }
+
+        $remaining = max(0, (float)$installment->amount - (float)$installment->paid_total);
+
+        $paymentMethods = [
+            'dinheiro' => 'Dinheiro',
+            'pix'      => 'Pix',
+            'credito'  => 'Crédito',
+            'debito'   => 'Débito',
+            'outro'    => 'Outro',
+        ];
+
+        return view('admin.sales.partials.payment_modal', compact(
+            'sale', 'installment', 'remaining', 'paymentMethods'
+        ));
+    }
+
+    public function storePayment(Request $request, Sale $sale, Installment $installment, PaymentService $payments)
+    {
+        if ($installment->sale_id !== $sale->id) {
+            return response()->json(['ok' => false, 'message' => 'Parcela inválida'], 422);
+        }
+
+        // Normalizamos dados antes da validação dependente do restante
+        $remaining = max(0, (float)$installment->amount - (float)$installment->paid_total);
+
+        $data = $request->validate([
+            'amount'         => ['required','numeric','min:0.01'],
+            'payment_method' => ['required','in:dinheiro,pix,credito,debito,outro'],
+            'note'           => ['nullable','string','max:500'],
+        ]);
+
+        if ($data['amount'] > $remaining + 0.00001) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Valor acima do restante da parcela.',
+            ], 422);
+        }
+
+        // Sempre vincula ao usuário autenticado
+        $userId = Auth::id();
+
+        // Realiza a criação do payment + atualização da parcela em transação
+        $payments->createPaymentForInstallment(
+            installment: $installment,
+            userId: $userId,
+            amount: (float)$data['amount'],
+            method: $data['payment_method'],
+            note: $data['note'] ?? null
+        );
+
+        return response()->json(['ok' => true]);
     }
 }

@@ -159,7 +159,21 @@
                   };
                 @endphp
                 <tr>
-                  <td>{{ $idx+1 }}</td>
+                  <td>
+                    @if(in_array(strtolower($istatus), ['pago'], true))
+                      <span class="text-muted small" title="Parcela quitada">
+                        {{ $inst->number }}
+                      </span>
+                    @else
+                      <a href="#"
+                        class="js-open-payment-modal small"
+                        data-sale-id="{{ $sale->id }}"
+                        data-installment-id="{{ $inst->id }}"
+                        title="Registrar pagamento desta parcela">
+                        {{ $inst->number }}
+                      </a>
+                    @endif
+                  </td>
                   <td>{{ $due ? \Illuminate\Support\Carbon::parse($due)->format('d/m/Y') : '-' }}</td>
                   <td class="text-end">R$ {{ $money($amount) }}</td>
                   <td class="text-center"><span class="badge {{ $ibadge }}">{{ ucfirst($istatus) }}</span></td>
