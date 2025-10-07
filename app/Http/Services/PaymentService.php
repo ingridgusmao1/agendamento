@@ -5,14 +5,15 @@ use App\Models\{Installment,Payment};
 use Carbon\Carbon;
 
 class PaymentService {
-    public static function pay(Installment $ins, float $amount, int $userId, ?string $note=null): Installment
+    public static function pay(Installment $ins, float $amount, int $userId, ?string $note = null, ?string $paymentMethod = null): Installment
     {
         Payment::create([
-            'installment_id'=>$ins->id,
-            'user_id'=>$userId,
-            'paid_at'=>Carbon::now(),
-            'amount'=>$amount,
-            'note'=>$note,
+            'installment_id' => $ins->id,
+            'user_id'        => $userId,
+            'paid_at'        => Carbon::now(),
+            'amount'         => $amount,
+            'note'           => $note,
+            'payment_method' => $paymentMethod, // <-- NOVO
         ]);
 
         $paid = $ins->payments()->sum('amount');
