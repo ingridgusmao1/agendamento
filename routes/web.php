@@ -82,6 +82,15 @@ Route::prefix('admin')->middleware(['auth','ensure.usertype:admin'])->name('admi
     Route::get('/sales/{sale}',        [SaleAdminController::class, 'show'])->name('sales.show');
     Route::delete('/sales/{sale}',     [SaleAdminController::class, 'destroy'])->name('sales.destroy');
 
+    // ===== Parcela: modal de pagamento e gravação =====
+    // Abre o modal (parcial) para registrar pagamento de uma parcela específica
+    Route::get('/sales/{sale}/installments/{installment}/payment-modal', [SaleAdminController::class, 'paymentModal'])
+        ->name('sales.installments.payment.modal');
+
+    // Efetiva o pagamento da parcela (insere em payments e atualiza installments)
+    Route::post('/sales/{sale}/installments/{installment}/payments', [SaleAdminController::class, 'storePayment'])
+        ->name('sales.installments.payments.store');
+
     //------------------------------------------------------------------------------------------------------------------------
 
     // Relatórios financeiros
