@@ -135,7 +135,7 @@ class InstallmentScheduleService
         $origin = $filters['origin'] ?? 'all';
 
         // Base para aplicar filtro de origem
-        $base = \App\Models\Installment::query();
+        $base = Installment::query();
 
         // Precisamos do filtro antes da agregação
         $this->applyOriginFilter($base, $origin);
