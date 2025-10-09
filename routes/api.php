@@ -6,7 +6,8 @@ use App\Http\Controllers\Api\{
     LookupController,
     SaleController,
     InstallmentController,
-    ProductController
+    ProductController,
+    CustomerController,
 };
 
 // Público
@@ -19,8 +20,7 @@ Route::prefix('')->middleware(['auth:sanctum'])->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 
     // lookup pode ser usado por todos os perfis que operam o app
-    Route::get('/lookup', LookupController::class)
-        ->middleware('ensure.usertype:admin,vendedor,cobrador,vendedor_cobrador');
+    Route::get('/lookup', LookupController::class)->middleware('ensure.usertype:admin,vendedor,cobrador,vendedor_cobrador');
 
     // Produtos: usado no fluxo de VENDAS
     Route::middleware(['ensure.usertype:admin,vendedor,vendedor_cobrador'])->group(function () {
@@ -33,4 +33,7 @@ Route::prefix('')->middleware(['auth:sanctum'])->group(function () {
     Route::middleware(['ensure.usertype:cobrador,vendedor_cobrador'])->group(function () {
         Route::post('/installments/{installment}/pay', [InstallmentController::class, 'pay']);
     });
+
+    Route::post('/customers', [CustomerController::class, 'store'])
+        ->middleware('ensure.usertype:admin,vendedor,vendedor_cobrador');
 });

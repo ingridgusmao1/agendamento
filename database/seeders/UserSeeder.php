@@ -10,26 +10,83 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // Admin principal
-        User::updateOrCreate(
-            ['code'=>'ADM001'],
-            ['name'=>'Administrador Geral','email'=>'adm001@local.test','type'=>'admin','password'=>Hash::make('password')]
-        );
+        User::query()->delete();
 
-        // 6 funcionários (codes fixos)
-        $users = [
-            ['code'=>'VEN101','name'=>'João Silva','type'=>'vendedor'],
-            ['code'=>'VEN102','name'=>'Maria Souza','type'=>'vendedor'],
-            ['code'=>'COB201','name'=>'Pedro Lopes','type'=>'cobrador'],
-            ['code'=>'COB202','name'=>'Aline Santos','type'=>'cobrador'],
-            ['code'=>'HÍB301','name'=>'Carlos Queiroz','type'=>'vendedor_cobrador'],
-            ['code'=>'HÍB302','name'=>'Beatriz Oliveira','type'=>'vendedor_cobrador'],
-        ];
-        foreach ($users as $u) {
-            User::updateOrCreate(
-                ['code'=>$u['code']],
-                ['name'=>$u['name'],'email'=> strtolower($u['code']).'@local.test','type'=>$u['type'],'password'=>Hash::make('password')]
-            );
-        }
+        // Admin permanece com store_mode = null
+        User::create([
+            'name'       => 'Administrador',
+            'email'      => 'admin@admin.com',
+            'password'   => Hash::make('password'),
+            'code'       => 'ADM001',
+            'type'       => 'admin',
+            'store_mode' => null,
+        ]);
+
+        // Vendedores da loja
+        User::create([
+            'name'       => 'Carlos Vendas Loja',
+            'email'      => 'carlos@loja.com',
+            'password'   => Hash::make('vendedor123'),
+            'code'       => 'VEN001',
+            'type'       => 'vendedor',
+            'store_mode' => 'loja',
+        ]);
+
+        User::create([
+            'name'       => 'Mariana Caixa',
+            'email'      => 'mariana@loja.com',
+            'password'   => Hash::make('vendedor123'),
+            'code'       => 'VEN002',
+            'type'       => 'vendedor',
+            'store_mode' => 'loja',
+        ]);
+
+        // Vendedor híbrido (atua em loja e externo)
+        User::create([
+            'name'       => 'Henrique Híbrido',
+            'email'      => 'henrique@ambos.com',
+            'password'   => Hash::make('vendedor123'),
+            'code'       => 'VEN003',
+            'type'       => 'vendedor',
+            'store_mode' => 'ambos',
+        ]);
+
+        // Vendedores externos
+        User::create([
+            'name'       => 'João Externo',
+            'email'      => 'joao@externo.com',
+            'password'   => Hash::make('vendedor123'),
+            'code'       => 'VEN004',
+            'type'       => 'vendedor',
+            'store_mode' => 'externo',
+        ]);
+
+        User::create([
+            'name'       => 'Luciana Campos',
+            'email'      => 'luciana@externo.com',
+            'password'   => Hash::make('vendedor123'),
+            'code'       => 'VEN005',
+            'type'       => 'vendedor',
+            'store_mode' => 'externo',
+        ]);
+
+        // Vendedores cobradores (sempre ambos)
+        User::create([
+            'name'       => 'Roberto Cobrador',
+            'email'      => 'roberto@ambos.com',
+            'password'   => Hash::make('vendedor123'),
+            'code'       => 'VEN006',
+            'type'       => 'vendedor_cobrador',
+            'store_mode' => 'ambos',
+        ]);
+
+        User::create([
+            'name'       => 'Fernanda Atendimento',
+            'email'      => 'fernanda@ambos.com',
+            'password'   => Hash::make('vendedor123'),
+            'code'       => 'VEN007',
+            'type'       => 'vendedor_cobrador',
+            'store_mode' => 'ambos',
+        ]);
     }
 }

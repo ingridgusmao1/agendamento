@@ -9,6 +9,16 @@ class ProductController extends Controller
 {
     public function index()
     {
-        return Product::query()->select('id','name','model','color','size','price')->orderBy('name')->get();
+        return Product::orderBy('name')->get();
+    }
+
+    public function destroy(Product $product)
+    {
+        if ($product->trashed()) {
+            return back()->with('ok', __('global.product_already_deleted'));
+        }
+
+        $product->delete();
+        return back()->with('ok', __('global.product_deleted'));
     }
 }

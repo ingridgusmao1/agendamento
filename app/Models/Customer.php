@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Customer extends Model
 {
@@ -11,7 +12,7 @@ class Customer extends Model
 
     protected $fillable = [
         'name','street','number','district','city','reference_point',
-        'rg','cpf','phone','other_contact','lat','lng',
+        'rg','cpf','phone','other_contact','lat','lng','avatar_path','place_path'
     ];
 
     protected $casts = [
@@ -19,8 +20,8 @@ class Customer extends Model
         'lng' => 'float',
     ];
 
-    public function sales()
+    public function sales(): HasMany
     {
-        return $this->hasMany(Sale::class);
+        return $this->hasMany(Sale::class, 'customer_id');
     }
 }

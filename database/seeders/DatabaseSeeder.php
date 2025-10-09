@@ -18,6 +18,8 @@ class DatabaseSeeder extends Seeder
             ProductSeeder::class,
             CustomerSeeder::class,
             SaleSeeder::class,
+            InstallmentSeeder::class,
+            PaymentSeeder::class,
         ]);
     }
 }

@@ -12,13 +12,19 @@ class InstallmentController extends Controller
     public function pay(Request $request, Installment $installment)
     {
         $data = $request->validate([
-            'amount' => ['required','numeric','min:0.01'],
-            'note'   => ['nullable','string'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'note' => ['nullable', 'string'],
+            'payment_method' => ['required', 'in:pix,dinheiro,credito,debito,outro'],
         ]);
 
-        PaymentService::pay($installment, (float)$data['amount'], $request->user()->id, $data['note'] ?? null);
+        PaymentService::pay(
+            $installment,
+            (float) $data['amount'],
+            $request->user()->id,
+            $data['note'] ?? null,
+            $data['payment_method']
+        );
 
-        // Retorna a parcela atualizada e o saldo remanescente da venda
         $sale = $installment->sale()->with('installments')->first();
         $remaining = $sale->remainingBalance();
 

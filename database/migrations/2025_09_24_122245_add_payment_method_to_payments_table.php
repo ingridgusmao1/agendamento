@@ -11,12 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('photos', function(Blueprint $t){
-        $t->id();
-        $t->foreignId('sale_id')->constrained();
-        $t->enum('kind',['cliente','lugar'])->index();   // cliente, local de entrega
-        $t->string('path');
-        $t->timestamps();
+        Schema::table('payments', function (Blueprint $table) {
+            $table->string('payment_method')->nullable()->after('note');
         });
     }
 
@@ -25,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('photos');
+        Schema::table('payments', function (Blueprint $table) {
+            $table->dropColumn('payment_method');
+        });
     }
 };

@@ -4,11 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Payment;
 
 class Sale extends Model
 {
     use HasFactory;
+
+    public const STATUS_OPEN = 'aberto';
+    public const STATUS_CLOSED = 'fechado';
+    public const STATUS_DELAYED = 'atrasado';
 
     protected $fillable = [
         'number',
@@ -36,6 +39,16 @@ class Sale extends Model
         'rescheduled_day'    => 'integer',
     ];
 
+    protected static function booted()
+    {
+        static::creating(function ($sale) {
+            if (empty($sale->number)) {
+                $lastId = Sale::max('id') + 1;
+                $sale->number = 'N'.str_pad($lastId, 5, '0', STR_PAD_LEFT);
+            }
+        });
+    }
+
     public function customer()
     {
         return $this->belongsTo(Customer::class);
@@ -48,12 +61,24 @@ class Sale extends Model
 
     public function installments()
     {
-        return $this->hasMany(Installment::class)->orderBy('number');
+        return $this->hasMany(Installment::class, 'sale_id', 'id');
     }
 
-    public function photos()
+    public function seller()
     {
-        return $this->hasMany(Photo::class);
+        return $this->belongsTo(User::class, 'seller_id');
+    }
+
+    public function payments()
+    {
+        return $this->hasManyThrough(
+            Payment::class,      // related
+            Installment::class,  // through
+            'sale_id',       // Foreign key on installments referencing sales
+            'installment_id',// Foreign key on payments referencing installments
+            'id',            // Local key on sales
+            'id'             // Local key on installments
+        );
     }
 
     public function remainingBalance(): float
