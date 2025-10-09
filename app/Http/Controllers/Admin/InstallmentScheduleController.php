@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Services\InstallmentScheduleService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 
 class InstallmentScheduleController extends Controller
 {
@@ -17,12 +16,14 @@ class InstallmentScheduleController extends Controller
         if (!in_array($origin, ['all','store','external'], true)) {
             $origin = 'all';
         }
-
         $filters = ['origin' => $origin];
 
         $installments = $service->getFilteredInstallments($filters, self::PER_PAGE);
 
-        return view('admin.installments_schedule.index', compact('installments','filters'));
-    }
+        $aggr   = $service->getStaticAggregates($filters);
+        $counts = $aggr['counts'];
+        $sums   = $aggr['sums'];
 
+        return view('admin.installments_schedule.index', compact('installments','filters','counts','sums'));
+    }
 }
