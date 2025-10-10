@@ -27,22 +27,19 @@ class ProductAdminController extends Controller
         return view('admin.products.index');
     }
 
-    public function fetch(Request $request, ProductService $service): JsonResponse
+    public function fetch(Request $request)
     {
-        $request->validate(ProductValidator::fetch());
+        $params = $request->only(['q', 'per_page', 'page', 'sort', 'order']);
 
-        $q       = $service->qTrim($request->query('q', ''));
-        $perPage = self::PER_PAGE_DEFAULT;
-        $items = $service->fetch(['q' => $q], $perPage);
-        $html = view('admin.products._rows', compact('items'))->render();
+        $items = $this->service->fetch($params);
 
         return response()->json([
-            'html'     => $html,
+            'html'     => view('admin.products._rows', compact('items'))->render(),
             'page'     => $items->currentPage(),
             'per_page' => $items->perPage(),
             'total'    => $items->total(),
             'hasPrev'  => $items->currentPage() > 1,
-            'hasNext'  => $items->hasMorePages(),
+            'hasMore'  => $items->hasMorePages(),
         ]);
     }
 

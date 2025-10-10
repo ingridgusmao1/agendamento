@@ -352,3 +352,12 @@ select:invalid {
 .table-hover tbody tr.row-low-stock:hover > * {
   background-color: #ffe8ec !important; /* um tom 1 passo abaixo */
 }
+
+/* deixa o “link” do cabeçalho mais discreto */
+.table .sortable {
+  font-weight: 600;
+  color: inherit;
+  text-decoration: none;
+}
+.table .sortable:hover { text-decoration: underline; }
+.table .sort-icon { margin-left: .35rem; font-size: .9em; vertical-align: middle; }
