@@ -42,6 +42,7 @@ class ProductSeeder extends Seeder
                     'notes'       => $p['notes'],
                     'complements' => $p['complements'] ?? [],
                     'photo_path'  => [],
+                    'stock_total' => random_int(-3, 25),
                 ]
             );
         }
