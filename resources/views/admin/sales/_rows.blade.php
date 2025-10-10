@@ -1,5 +1,9 @@
 @php
-  // helper p/ primeira foto de product (photo_path JSON: ["products/..","..."])
+  use Illuminate\Support\Facades\Storage;
+
+  $MUGSHOT = asset('storage/customers/mugshot/mugshot.png');
+
+  // Mantive seu helper; não é usado aqui, mas deixei para consistência
   $firstPhoto = function ($product) {
     if (!$product || empty($product->photo_path)) return null;
     $arr = is_array($product->photo_path)
@@ -11,29 +15,52 @@
 
 @forelse ($items as $s)
 @php
-  $cust = $s->customer;
-  $custAvatar = $cust && $cust->avatar_path
-    ? asset('storage/'.$cust->avatar_path)
-    : 'https://via.placeholder.com/120?text=Avatar';
+  $cust = $s->customer ?? null;
+
+  // Caminho relativo vindo do banco
+  $avatarRel = $cust?->avatar_path ?: null;
+
+  // Checagem robusta de existência no disco "public"
+  $avatarExists = false;
+  if ($avatarRel) {
+    try {
+      $disk = Storage::disk('public');
+      $avatarExists = $disk->exists($avatarRel);
+      if (!$avatarExists) {
+        // Em alguns ambientes (ex.: macOS), exists() pode falhar em paths peculiares;
+        // conferimos também via caminho absoluto.
+        $abs = $disk->path($avatarRel);
+        $avatarExists = is_file($abs);
+      }
+    } catch (\Throwable $e) {
+      $avatarExists = false;
+    }
+  }
+
+  // URL final
+  $avatarUrl = $avatarExists ? asset('storage/'.$avatarRel) : $MUGSHOT;
+
+  // Badge de status (igual ao seu)
+  $badge = match ($s->status) {
+    'fechado'  => 'bg-success',
+    'atrasado' => 'bg-warning text-dark',
+    default    => 'bg-secondary'
+  };
 @endphp
+
 <tr>
   {{-- avatar do cliente --}}
-  <td>
-    <img src="{{ $custAvatar }}" class="img-thumbnail" style="width:80px;height:80px;object-fit:cover;" alt="avatar">
+  <td style="width:120px">
+    <img src="{{ $avatarUrl }}" alt="avatar" class="img-thumbnail"
+         style="width:120px;height:120px;object-fit:cover;"
+         onerror="this.onerror=null;this.src='{{ $MUGSHOT }}';">
   </td>
 
   <td>{{ $cust?->name ?? '-' }}</td>
 
   <td>{{ $s->number ?? '-' }}</td>
-  
+
   <td>
-    @php
-      $badge = match ($s->status) {
-        'fechado' => 'bg-success',
-        'atrasado' => 'bg-warning text-dark',
-        default => 'bg-secondary'
-      };
-    @endphp
     <span class="badge {{ $badge }}">{{ ucfirst($s->status) }}</span>
   </td>
 
