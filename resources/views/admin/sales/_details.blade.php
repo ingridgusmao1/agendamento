@@ -1,4 +1,6 @@
 @php
+  use Illuminate\Support\Facades\Storage; // << adicionado
+
   // Helpers locais
   $money = fn($v) => is_numeric($v) ? number_format((float)$v, 2, ',', '.') : '-';
 
@@ -10,9 +12,13 @@
     return $arr[0] ?? null;
   };
 
-  // avatar do cliente
-  $cust = $sale->customer ?? null;
-  $avatar = $cust && !empty($cust->avatar_path) ? asset('storage/'.$cust->avatar_path) : 'https://via.placeholder.com/120?text=Avatar';
+  // avatar do cliente  (apenas ESTA parte foi alterada)
+  $cust       = $sale->customer ?? null;
+  $MUGSHOT    = asset('storage/customers/mugshot/mugshot.png');
+  $avatarRel  = $cust->avatar_path ?? null;
+  $avatar     = ($avatarRel && Storage::disk('public')->exists($avatarRel))
+                  ? asset('storage/'.$avatarRel)
+                  : $MUGSHOT;
 
   // totais básicos
   $itemsTotal = $sale->items?->sum(function($it){
@@ -55,7 +61,9 @@
   {{-- Cliente --}}
   <div class="card mb-3">
     <div class="card-body d-flex align-items-center gap-3">
-      <img src="{{ $avatar }}" alt="avatar" class="rounded" style="width:80px;height:80px;object-fit:cover;">
+      <img src="{{ $avatar }}" alt="avatar" class="rounded"
+           style="width:80px;height:80px;object-fit:cover;"
+           onerror="this.onerror=null;this.src='{{ $MUGSHOT }}';"><!-- << fallback visual -->
       <div class="flex-grow-1">
         <div class="fw-semibold">{{ $cust->name ?? '-' }}</div>
         <div class="text-muted small">
