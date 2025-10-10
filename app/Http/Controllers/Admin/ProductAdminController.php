@@ -218,4 +218,13 @@ class ProductAdminController extends Controller
 
         return back()->with('ok', trans('global.image_deleted_success'));
     }
+
+    public function hasLowStock(): JsonResponse
+    {
+        $exists = Product::query()->where('stock_total', '<=', 0)->exists();
+
+        return response()->json([
+            'low_stock' => $exists,
+        ]);
+    }
 }

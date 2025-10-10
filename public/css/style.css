@@ -304,9 +304,28 @@ select:invalid {
   --bs-table-hover-bg: #fff2d6;
 }
 
-/* Se quiser um vermelho mais “alerta” que o padrão, descomente:
-.table-installments tbody tr.table-danger > * {
-  --bs-table-bg: #f8d7da;
-  --bs-table-striped-bg: #f8d7da;
-  --bs-table-hover-bg: #f1b0b7;
+/* Badge posicionado acima do título */
+.title-with-badge {
+  position: relative;
+  display: inline-block;
+  padding-top: 12px; /* cria espaço para o badge "acima" */
+}
+#lowStockBadge {
+  position: absolute;
+  top: 0;              /* acima da palavra */
+  left: 0;             /* alinhado ao início da palavra */
+  display: none;       /* inicia oculto */
+  font-size: 0.95rem;  /* tamanho do ícone/texto */
+  line-height: 1;
+}
+/* Exemplo de “quadrinho vermelho” com ícone de exclamação */
+.badge-alert {
+  background: #dc3545;           /* vermelho */
+  color: #fff;
+  border-radius: .35rem;         /* cantos levemente arredondados */
+  padding: .15rem .4rem;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.08) inset;
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
 }
