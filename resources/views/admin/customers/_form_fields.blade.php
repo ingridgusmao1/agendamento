@@ -51,16 +51,18 @@
     <input type="number" step="any" name="lng" class="form-control">
   </div>
 
-  {{-- Upload do avatar (editável) + preview clicável --}}
-  <div class="col-md-4">
+  {{-- Upload do avatar (oculto por padrão; JS decide quando mostrar) --}}
+  <div class="col-md-4" data-block="upload-avatar" style="display:none">
     <label class="form-label">{{ __('global.avatar') }} (max 240×240)</label>
-    <input type="file" name="avatar" class="form-control" accept=".jpg,.jpeg,.png,.webp">
+    <input type="file" name="avatar" class="form-control" accept=".jpg,.jpeg,.png,.webp,image/*">
     <div class="form-text">{{ __('global.image_constraints_240') }}</div>
     @error('avatar')
       <div class="text-danger small">{{ $message }}</div>
     @enderror
   </div>
-  <div class="col-md-2">
+
+  {{-- Preview do avatar --}}
+  <div class="col-md-2" data-block="avatar-preview" style="display:none">
     <label class="form-label d-block">{{ __('global.preview') }}</label>
     <img data-avatar-preview
          src="{{ $PLACEHOLDER }}"
@@ -70,8 +72,8 @@
     <div class="text-muted small mt-1">{{ __('global.click_to_zoom') }}</div>
   </div>
 
-  {{-- Preview do local (somente visualização) --}}
-  <div class="col-md-2">
+  {{-- Preview do local --}}
+  <div class="col-md-2" data-block="place-preview" style="display:none">
     <label class="form-label d-block">{{ __('global.place_photo') }}</label>
     <img data-place-preview
          src="{{ $PLACEHOLDER }}"
@@ -80,8 +82,8 @@
          title="{{ __('global.click_to_zoom') }}">
   </div>
 
-  {{-- Link para Google Maps --}}
-  <div class="col-md-4 d-flex align-items-end">
+  {{-- Link Google Maps --}}
+  <div class="col-md-4 d-flex align-items-end" data-block="maps-link" style="display:none">
     <a data-maps-link href="#" target="_blank" class="link-primary d-inline-flex align-items-center gap-1">
       <i class="bi bi-geo-alt"></i> <span>{{ __('global.click_to_view_on_map') }}</span>
     </a>
