@@ -36,6 +36,9 @@ Route::prefix('admin')->middleware(['auth','ensure.usertype:admin'])->name('admi
     // Paginação de produtos
     Route::get('/products/fetch', [ProductAdminController::class, 'fetch'])->name('products.fetch');
 
+    // Contagem de produtos com estoque baixo
+    Route::get('/products/has-low-stock', [ProductAdminController::class, 'hasLowStock'])->name('products.hasLowStock');
+
     //------------------------------------------------------------------------------------------------------------------------
 
     // Usuários

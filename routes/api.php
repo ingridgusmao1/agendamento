@@ -34,6 +34,5 @@ Route::prefix('')->middleware(['auth:sanctum'])->group(function () {
         Route::post('/installments/{installment}/pay', [InstallmentController::class, 'pay']);
     });
 
-    Route::post('/customers', [CustomerController::class, 'store'])
-        ->middleware('ensure.usertype:admin,vendedor,vendedor_cobrador');
+    Route::post('/customers', [CustomerController::class, 'store'])->middleware('ensure.usertype:admin,vendedor,vendedor_cobrador');
 });

@@ -58,7 +58,7 @@ class SaleController extends Controller
 
             // Validação extra: atributos devem ser escolhidos se o produto tiver complements
             $productIds = collect($validated['items'])->pluck('product_id')->all();
-            $products = \App\Models\Product::whereIn('id', $productIds)->get()->keyBy('id');
+            $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
 
             $errors = [];
             foreach ($validated['items'] as $idx => $it) {
@@ -116,14 +116,29 @@ class SaleController extends Controller
                     ]);
                 }
 
-                // 3) Parcelas
+                // 3) Ajuste de estoque por item (aceita qty negativa → aumenta o estoque)
+                foreach ($validated['items'] as $item) {
+                    $pid = (int) $item['product_id'];
+                    $qty = (int) $item['qty'];
+
+                    // lock pessimista para evitar corrida de estoque
+                    $prod = Product::whereKey($pid)->lockForUpdate()->first();
+
+                    if (!$prod) {
+                        throw new \RuntimeException("Produto {$pid} não encontrado para ajuste de estoque.");
+                    }
+
+                    $prod->increment('stock_total', -$qty);
+                }
+
+                // 4) Parcelas
                 if (method_exists(SaleService::class, 'createInstallments')) {
                     SaleService::createInstallments($sale);
                 } else {
                     app(SaleService::class)->createInstallments($sale);
                 }
 
-                // 4) Atualizar fotos do cliente, se existirem
+                // 5) Atualizar fotos do cliente, se existirem
                 $customer = Customer::find($sale->customer_id);
 
                 if ($request->hasFile('customer_photo')) {

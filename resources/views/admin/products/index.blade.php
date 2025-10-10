@@ -18,15 +18,47 @@
     <table class="table align-middle mb-0 pm-table">
       <thead class="table-light">
         <tr>
-          <th></th>
-          <th>{{ __('global.name') }}</th>
-          <th>{{ __('global.model') }}</th>
-          <th>{{ __('global.color') }}</th>
-          <th>{{ __('global.size') }}</th>
-          <th class="text-end">{{ __('global.price') }}</th>
+          <th style="width:160px"></th>
+
+          <th>
+            <button type="button" class="btn btn-link p-0 sortable" data-sort="name">
+              {{ __('global.name') }}
+              <i class="bi bi-chevron-expand sort-icon"></i>
+            </button>
+          </th>
+
+          <th>
+            <button type="button" class="btn btn-link p-0 sortable" data-sort="model">
+              {{ __('global.model') }}
+              <i class="bi bi-chevron-expand sort-icon"></i>
+            </button>
+          </th>
+
+          <th>
+            <button type="button" class="btn btn-link p-0 sortable" data-sort="stock_total">
+              {{ __('global.stock_total') }}
+              <i class="bi bi-chevron-expand sort-icon"></i>
+            </button>
+          </th>
+
+          <th>
+            <button type="button" class="btn btn-link p-0 sortable" data-sort="size">
+              {{ __('global.size') }}
+              <i class="bi bi-chevron-expand sort-icon"></i>
+            </button>
+          </th>
+
+          <th class="text-end">
+            <button type="button" class="btn btn-link p-0 sortable" data-sort="price">
+              {{ __('global.price') }}
+              <i class="bi bi-chevron-expand sort-icon"></i>
+            </button>
+          </th>
+
           <th class="text-center">{{ __('global.actions') }}</th>
         </tr>
       </thead>
+
       <tbody id="products-tbody">
         {{-- carregado via AJAX (admin.products.fetch -> view admin.products._rows) --}}
       </tbody>
@@ -66,8 +98,8 @@
             <input name="model" class="form-control pm-input">
           </div>
           <div class="col-md-4">
-            <label class="form-label">{{ __('global.color') }}</label>
-            <input name="color" class="form-control pm-input">
+            <label class="form-label">{{ __('global.stock_total') }}</label>
+            <input type="number" name="stock_total" class="form-control pm-input" required>
           </div>
           <div class="col-md-4">
             <label class="form-label">{{ __('global.size') }}</label>
@@ -120,8 +152,8 @@
             <input name="model" id="editModel" class="form-control pm-input">
           </div>
           <div class="col-md-4">
-            <label class="form-label">{{ __('global.color') }}</label>
-            <input name="color" id="editColor" class="form-control pm-input">
+            <label class="form-label">{{ __('global.stock_total') }}</label>
+            <input type="number" name="stock_total" id="editStockTotal" class="form-control pm-input" required>
           </div>
           <div class="col-md-4">
             <label class="form-label">{{ __('global.size') }}</label>
@@ -157,59 +189,78 @@
 
 @push('scripts')
 <script>
-document.addEventListener('click', function (ev) {
-  const btn = ev.target.closest('.btn-edit-product');
-  if (!btn) return;
+(function () {
+  // ---------------------------
+  // Estado
+  // ---------------------------
+  let page  = 1;
+  let sort  = 'stock_total'; // padrão: menor estoque primeiro
+  let order = 'asc';
 
-  const modalEl = document.getElementById('modalEdit');
-  if (!modalEl) return;
+  // ---------------------------
+  // Referências de UI
+  // ---------------------------
+  const $q       = document.querySelector('input[name="q"]');
+  const $per     = document.querySelector('[name="per_page"]');
+  const $tbody   = document.getElementById('products-tbody');
+  const $btnPrev = document.getElementById('btnPrevP');
+  const $btnNext = document.getElementById('btnNextP');
+  const $range   = document.getElementById('products-range');
 
-  const formEl        = modalEl.querySelector('#formEditProduct');
-  const inputName     = modalEl.querySelector('#editName');
-  const inputModel    = modalEl.querySelector('#editModel');
-  const inputColor    = modalEl.querySelector('#editColor');
-  const inputSize     = modalEl.querySelector('#editSize');
-  const inputPrice    = modalEl.querySelector('#editPrice');
-  const textareaNotes = modalEl.querySelector('#editNotes');
-  const textareaComp  = modalEl.querySelector('#editComplements');
-
-  formEl.setAttribute('action', btn.dataset.updateUrl);
-
-  inputName.value     = btn.dataset.name ?? '';
-  inputModel.value    = btn.dataset.model ?? '';
-  inputColor.value    = btn.dataset.color ?? '';
-  inputSize.value     = btn.dataset.size ?? '';
-  inputPrice.value    = btn.dataset.price ?? '';
-  textareaNotes.value = btn.dataset.notes ?? '';
-  textareaComp.value  = btn.dataset.complements ?? '';
-
-  const photosInput = modalEl.querySelector('input[name="photos[]"]');
-  if (photosInput) photosInput.value = '';
-});
-
-(function(){
-  let page = 1;
-
-  const $q        = document.querySelector('input[name="q"]');
-  const $per      = document.querySelector('[name="per_page"]'); // se existir no seu layout
-  const $tbody    = document.getElementById('products-tbody');
-  const $btnPrev  = document.getElementById('btnPrevP');
-  const $btnNext  = document.getElementById('btnNextP');
-  const $range    = document.getElementById('products-range');
-  const urlFetch  = @json(route('admin.products.fetch'));
+  const urlFetch = @json(route('admin.products.fetch'));
   const confirmDeleteMsg = @json(__('global.exclude_this_product'));
 
+  // ---------------------------
+  // Ordenação (UI)
+  // ---------------------------
+  const $sortableBtns = document.querySelectorAll('.sortable');
+
+  function clearSortIcons() {
+    document.querySelectorAll('.sortable .sort-icon').forEach(icon => {
+      icon.classList.remove('bi-chevron-up', 'bi-chevron-down');
+      if (!icon.classList.contains('bi-chevron-expand')) {
+        icon.classList.add('bi-chevron-expand');
+      }
+    });
+  }
+
+  function applySortIcon(activeBtn) {
+    clearSortIcons();
+    const icon = activeBtn.querySelector('.sort-icon');
+    if (!icon) return;
+    icon.classList.remove('bi-chevron-expand');
+    icon.classList.add(order === 'asc' ? 'bi-chevron-up' : 'bi-chevron-down');
+  }
+
+  $sortableBtns.forEach(btn => {
+    btn.addEventListener('click', function () {
+      const chosen = this.getAttribute('data-sort');
+      if (!chosen) return;
+
+      if (sort === chosen) {
+        order = (order === 'asc') ? 'desc' : 'asc';
+      } else {
+        sort  = chosen;
+        order = 'asc'; // direção padrão ao trocar de coluna
+      }
+      applySortIcon(this);
+      page = 1;
+      load();
+    });
+  });
+
+  // ---------------------------
+  // Utilidades
+  // ---------------------------
   function currentPerPage(){
     const v = $per ? parseInt($per.value, 10) : 20;
     return Number.isFinite(v) ? Math.max(5, Math.min(100, v)) : 20;
   }
 
-  function initTooltips(){
-    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
-  }
-
   function wireDeleteConfirm(){
     document.querySelectorAll('.delete-form').forEach(f => {
+      if (f.dataset._wired) return;
+      f.dataset._wired = '1';
       f.addEventListener('submit', (e) => {
         if (!confirm(confirmDeleteMsg)) e.preventDefault();
       });
@@ -234,10 +285,9 @@ document.addEventListener('click', function (ev) {
     if ($tbody) $tbody.innerHTML = meta.html || '';
     updatePager(meta);
     updateRange(meta);
-    if (typeof window.initTooltips !== 'function') {
-      window.initTooltips = function(){};
-    }
-    window.initTooltips();
+
+    // tooltips e confirm
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
     wireDeleteConfirm();
   }
 
@@ -246,6 +296,8 @@ document.addEventListener('click', function (ev) {
       q: $q?.value || '',
       page: String(page),
       per_page: String(currentPerPage()),
+      sort: sort,
+      order: order
     });
     fetch(`${urlFetch}?${params.toString()}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
       .then(async r => {
@@ -266,6 +318,48 @@ document.addEventListener('click', function (ev) {
       });
   }
 
+  // ---------------------------
+  // Modal de Edição (preenchimento robusto)
+  // ---------------------------
+  (function bindEditModal(){
+    const modalEl = document.getElementById('modalEdit');
+    if (!modalEl) return;
+
+    modalEl.addEventListener('show.bs.modal', function (ev) {
+      const btn = ev.relatedTarget; // botão que abriu o modal
+      if (!btn) return;
+
+      const formEl          = modalEl.querySelector('#formEditProduct');
+      const inputName       = modalEl.querySelector('#editName');
+      const inputModel      = modalEl.querySelector('#editModel');
+      const inputSize       = modalEl.querySelector('#editSize');
+      const inputPrice      = modalEl.querySelector('#editPrice');
+      const inputStockTotal = modalEl.querySelector('#editStockTotal');
+      const textareaNotes   = modalEl.querySelector('#editNotes');
+      const textareaComp    = modalEl.querySelector('#editComplements');
+
+      // action
+      const updateUrl = btn.getAttribute('data-update-url') || '';
+      if (formEl && updateUrl) formEl.setAttribute('action', updateUrl);
+
+      // valores (sempre via getAttribute para evitar incompatibilidades)
+      if (inputName)       inputName.value       = btn.getAttribute('data-name') ?? '';
+      if (inputModel)      inputModel.value      = btn.getAttribute('data-model') ?? '';
+      if (inputSize)       inputSize.value       = btn.getAttribute('data-size') ?? '';
+      if (inputPrice)      inputPrice.value      = btn.getAttribute('data-price') ?? '';
+      if (textareaNotes)   textareaNotes.value   = btn.getAttribute('data-notes') ?? '';
+      if (textareaComp)    textareaComp.value    = btn.getAttribute('data-complements') ?? '';
+      if (inputStockTotal) inputStockTotal.value = btn.getAttribute('data-stock-total') ?? '';
+
+      // limpa input de fotos (se existir)
+      const photosInput = modalEl.querySelector('input[name="photos[]"]');
+      if (photosInput) photosInput.value = '';
+    });
+  })();
+
+  // ---------------------------
+  // Eventos de paginação / busca
+  // ---------------------------
   $btnPrev?.addEventListener('click', function(){ if (page > 1){ page--; load(); } });
   $btnNext?.addEventListener('click', function(){ page++; load(); });
 
@@ -281,6 +375,13 @@ document.addEventListener('click', function (ev) {
     load();
   });
 
+  // ícone do sort inicial
+  (function initSortIconOnLoad() {
+    const btn = document.querySelector(`.sortable[data-sort="${sort}"]`);
+    if (btn) applySortIcon(btn);
+  })();
+
+  // carregamento inicial
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', load);
   } else {

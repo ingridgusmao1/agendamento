@@ -304,9 +304,60 @@ select:invalid {
   --bs-table-hover-bg: #fff2d6;
 }
 
-/* Se quiser um vermelho mais “alerta” que o padrão, descomente:
-.table-installments tbody tr.table-danger > * {
-  --bs-table-bg: #f8d7da;
-  --bs-table-striped-bg: #f8d7da;
-  --bs-table-hover-bg: #f1b0b7;
+/* Badge posicionado acima do título */
+.title-with-badge {
+  position: relative;
+  display: inline-block;
+  padding-top: 12px; /* cria espaço para o badge "acima" */
 }
+#lowStockBadge {
+  position: absolute;
+  top: 0;              /* acima da palavra */
+  left: 0;             /* alinhado ao início da palavra */
+  display: none;       /* inicia oculto */
+  font-size: 0.95rem;  /* tamanho do ícone/texto */
+  line-height: 1;
+}
+/* Exemplo de “quadrinho vermelho” com ícone de exclamação */
+.badge-alert {
+  background: #dc3545;           /* vermelho */
+  color: #fff;
+  border-radius: .35rem;         /* cantos levemente arredondados */
+  padding: .15rem .4rem;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.08) inset;
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+}
+
+/* Linha com estoque <= 0: fundo rosa claro */
+.row-low-stock {
+  --low-stock-bg: #f1a4ae; /* rosa bem claro, quase branco avermelhado */
+  background-color: var(--low-stock-bg) !important;
+}
+
+/* Garante que as células usem o mesmo fundo (Bootstrap às vezes pinta o <td>) */
+.row-low-stock > td,
+.row-low-stock > th,
+.table .row-low-stock > * {
+  background-color: var(--low-stock-bg) !important;
+}
+
+/* (Opcional) uma leve separação sem empurrar colunas */
+.row-low-stock > td {
+  box-shadow: inset 0 1px rgba(255, 0, 72, 0.08), inset 0 -1px rgba(255, 0, 72, 0.08);
+}
+
+/* (Opcional) manter o hover discreto sem “apagar” o rosa */
+.table-hover tbody tr.row-low-stock:hover > * {
+  background-color: #ffe8ec !important; /* um tom 1 passo abaixo */
+}
+
+/* deixa o “link” do cabeçalho mais discreto */
+.table .sortable {
+  font-weight: 600;
+  color: inherit;
+  text-decoration: none;
+}
+.table .sortable:hover { text-decoration: underline; }
+.table .sort-icon { margin-left: .35rem; font-size: .9em; vertical-align: middle; }

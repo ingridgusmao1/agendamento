@@ -17,29 +17,48 @@ class ProductService
     public function __construct(private ViewFactory $view) {}
 
     /** Listagem com paginação server-side para o fetch AJAX */
-    public function fetch(array $filters, int $perPage = 20): LengthAwarePaginatorContract
+    public function fetch(array $params)
     {
-        $q = trim((string)($filters['q'] ?? ''));
+        $q       = $params['q']        ?? null;
+        $perPage = (int)($params['per_page'] ?? 20);
+        $page    = (int)($params['page']     ?? 1);
 
-        return Product::query()
-            ->when($q !== '', function ($qb) use ($q) {
-                $qb->where(function ($w) use ($q) {
-                    $w->where('name', 'like', "%{$q}%")
-                      ->orWhere('model', 'like', "%{$q}%")
-                      ->orWhere('color', 'like', "%{$q}%")
-                      ->orWhere('size',  'like', "%{$q}%");
-                });
-            })
-            ->orderByDesc('id')
-            ->paginate($perPage)
-            ->appends(['q' => $q, 'per_page' => $perPage]);
+        // whitelist
+        $sortable = [
+            'name'        => 'name',
+            'model'       => 'model',
+            'stock_total' => 'stock_total',
+            'size'        => 'size',
+            'price'       => 'price',
+            'created_at'  => 'created_at',
+        ];
+
+        $sort  = $params['sort']  ?? 'stock_total';
+        $order = strtolower($params['order'] ?? 'asc');
+        $order = $order === 'desc' ? 'desc' : 'asc';
+        $sort  = $sortable[$sort] ?? 'stock_total';
+
+        $query = Product::query();
+
+        if ($q) {
+            $query->where(function ($w) use ($q) {
+                $w->where('name', 'like', "%{$q}%")
+                ->orWhere('model', 'like', "%{$q}%")
+                ->orWhere('size', 'like', "%{$q}%");
+            });
+        }
+
+        $query->orderBy($sort, $order)
+            ->orderBy('id', 'asc'); // desempate estável
+
+        return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
     /** Cria produto + salva fotos (se enviadas) */
     public function store(Request $request): Product
     {
         return DB::transaction(function () use ($request) {
-            $data = $request->only(['name','model','color','size','price','notes','complements']);
+            $data = $request->only(['name','model','stock_total','size','price','notes','complements']);
             /** @var Product $product */
             $product = Product::create($data);
 
@@ -60,7 +79,7 @@ class ProductService
     public function update(Product $product, Request $request): Product
     {
         return DB::transaction(function () use ($product, $request) {
-            $data = $request->only(['name','model','color','size','price','notes','complements']);
+            $data = $request->only(['name','model','stock_total','size','price','notes','complements']);
             $product->fill($data)->save();
 
             $files = $this->gatherFiles($request);
