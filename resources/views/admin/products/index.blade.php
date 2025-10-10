@@ -21,7 +21,7 @@
           <th></th>
           <th>{{ __('global.name') }}</th>
           <th>{{ __('global.model') }}</th>
-          <th>{{ __('global.color') }}</th>
+          <th>{{ __('global.stock_total') }}</th>
           <th>{{ __('global.size') }}</th>
           <th class="text-end">{{ __('global.price') }}</th>
           <th class="text-center">{{ __('global.actions') }}</th>
@@ -66,8 +66,8 @@
             <input name="model" class="form-control pm-input">
           </div>
           <div class="col-md-4">
-            <label class="form-label">{{ __('global.color') }}</label>
-            <input name="color" class="form-control pm-input">
+            <label class="form-label">{{ __('global.stock_total') }}</label>
+            <input type="number" name="stock_total" class="form-control pm-input" required>
           </div>
           <div class="col-md-4">
             <label class="form-label">{{ __('global.size') }}</label>
@@ -120,8 +120,8 @@
             <input name="model" id="editModel" class="form-control pm-input">
           </div>
           <div class="col-md-4">
-            <label class="form-label">{{ __('global.color') }}</label>
-            <input name="color" id="editColor" class="form-control pm-input">
+            <label class="form-label">{{ __('global.stock_total') }}</label>
+            <input type="number" name="stock_total" id="editStockTotal" class="form-control pm-input" required>
           </div>
           <div class="col-md-4">
             <label class="form-label">{{ __('global.size') }}</label>
@@ -164,34 +164,42 @@ document.addEventListener('click', function (ev) {
   const modalEl = document.getElementById('modalEdit');
   if (!modalEl) return;
 
-  const formEl        = modalEl.querySelector('#formEditProduct');
-  const inputName     = modalEl.querySelector('#editName');
-  const inputModel    = modalEl.querySelector('#editModel');
-  const inputColor    = modalEl.querySelector('#editColor');
-  const inputSize     = modalEl.querySelector('#editSize');
-  const inputPrice    = modalEl.querySelector('#editPrice');
-  const textareaNotes = modalEl.querySelector('#editNotes');
-  const textareaComp  = modalEl.querySelector('#editComplements');
+  const formEl          = modalEl.querySelector('#formEditProduct');
+  const inputName       = modalEl.querySelector('#editName');
+  const inputModel      = modalEl.querySelector('#editModel');
+  const inputSize       = modalEl.querySelector('#editSize');
+  const inputPrice      = modalEl.querySelector('#editPrice');
+  const inputStockTotal = modalEl.querySelector('#editStockTotal');
+  const textareaNotes   = modalEl.querySelector('#editNotes');
+  const textareaComp    = modalEl.querySelector('#editComplements');
 
   formEl.setAttribute('action', btn.dataset.updateUrl);
 
-  inputName.value     = btn.dataset.name ?? '';
-  inputModel.value    = btn.dataset.model ?? '';
-  inputColor.value    = btn.dataset.color ?? '';
-  inputSize.value     = btn.dataset.size ?? '';
-  inputPrice.value    = btn.dataset.price ?? '';
-  textareaNotes.value = btn.dataset.notes ?? '';
-  textareaComp.value  = btn.dataset.complements ?? '';
+  inputName && (inputName.value       = btn.dataset.name ?? '');
+  inputModel && (inputModel.value     = btn.dataset.model ?? '');
+  inputSize && (inputSize.value       = btn.dataset.size ?? '');
+  inputPrice && (inputPrice.value     = btn.dataset.price ?? '');
+  textareaNotes && (textareaNotes.value = btn.dataset.notes ?? '');
+  textareaComp && (textareaComp.value   = btn.dataset.complements ?? '');
 
+  // Lê tanto data-stock_total quanto data-stock-total (suporta ambos)
+  const stockFromBtn =
+      (btn.dataset.stock_total !== undefined ? btn.dataset.stock_total : undefined) ??
+      (btn.dataset.stockTotal !== undefined ? btn.dataset.stockTotal : '');
+
+  if (inputStockTotal) inputStockTotal.value = stockFromBtn ?? '';
+
+  // limpa input de fotos, se existir
   const photosInput = modalEl.querySelector('input[name="photos[]"]');
   if (photosInput) photosInput.value = '';
 });
 
+// Listagem com paginação/fetch
 (function(){
   let page = 1;
 
   const $q        = document.querySelector('input[name="q"]');
-  const $per      = document.querySelector('[name="per_page"]'); // se existir no seu layout
+  const $per      = document.querySelector('[name="per_page"]');
   const $tbody    = document.getElementById('products-tbody');
   const $btnPrev  = document.getElementById('btnPrevP');
   const $btnNext  = document.getElementById('btnNextP');

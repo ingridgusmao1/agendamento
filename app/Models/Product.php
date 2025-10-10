@@ -19,6 +19,7 @@ class Product extends Model
         'price'       => 'float',
         'complements' => 'array',
         'photo_path'  => 'array',
+        'stock_total' => 'integer',
     ];
 
     /* ----------------- MUTATOR: SEMPRE SALVA COMO ARRAY JSON ----------------- */

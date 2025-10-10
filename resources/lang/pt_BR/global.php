@@ -255,4 +255,5 @@ return [
     'total_normal' => 'Normais',
     'counts_aria' => 'Totais por faixa de vencimento',
     'low_stock' => 'Baixo estoque',
+    'stock_total' => 'Estoque total',
 ];

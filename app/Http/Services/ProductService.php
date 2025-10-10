@@ -39,7 +39,7 @@ class ProductService
     public function store(Request $request): Product
     {
         return DB::transaction(function () use ($request) {
-            $data = $request->only(['name','model','color','size','price','notes','complements']);
+            $data = $request->only(['name','model','stock_total','size','price','notes','complements']);
             /** @var Product $product */
             $product = Product::create($data);
 
@@ -60,7 +60,7 @@ class ProductService
     public function update(Product $product, Request $request): Product
     {
         return DB::transaction(function () use ($product, $request) {
-            $data = $request->only(['name','model','color','size','price','notes','complements']);
+            $data = $request->only(['name','model','stock_total','size','price','notes','complements']);
             $product->fill($data)->save();
 
             $files = $this->gatherFiles($request);
