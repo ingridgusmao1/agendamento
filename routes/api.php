@@ -10,35 +10,47 @@ use App\Http\Controllers\Api\{
     CustomerController,
 };
 
-// Público
+// ------------------------- PÚBLICO -------------------------
 Route::post('/auth/login', [AuthController::class, 'login']);
 
-// Privado (tudo aqui exige token Sanctum)
-Route::prefix('')->middleware(['auth:sanctum'])->group(function () {
-    // sessão
+// ------------------------- PRIVADO -------------------------
+Route::middleware(['auth:sanctum'])->group(function () {
+
+    // Sessão
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 
-    // lookup pode ser usado por todos os perfis que operam o app
-    Route::get('/lookup', LookupController::class)->middleware('ensure.usertype:admin,vendedor,cobrador,vendedor_cobrador');
+    // Lookup (buscas rápidas)
+    Route::get('/lookup', LookupController::class)
+        ->middleware('ensure.usertype:admin,vendedor,cobrador,vendedor_cobrador');
 
-    // Produtos: usado no fluxo de VENDAS
-    Route::middleware(['ensure.usertype:admin,vendedor,vendedor_cobrador'])->group(function () {
-        Route::get('/products', [ProductController::class, 'index']);
-        // Vendas (criar nova, ver detalhes)
-        Route::apiResource('sales', SaleController::class)->only(['show','store']);
-    });
+    // ----------------- VENDAS -----------------
+    // Detalhe da venda (liberado também para cobrador)
+    Route::get('/sales/{sale}', [SaleController::class, 'show'])
+        ->middleware('ensure.usertype:admin,vendedor,cobrador,vendedor_cobrador');
 
-    // Cobrança: pagar parcela
+    // Criar venda (sem cobrador)
+    Route::post('/sales', [SaleController::class, 'store'])
+        ->middleware('ensure.usertype:admin,vendedor,vendedor_cobrador');
+
+    // ----------------- COBRANÇA -----------------
     Route::middleware(['ensure.usertype:cobrador,vendedor_cobrador'])->group(function () {
         Route::post('/installments/{installment}/pay', [InstallmentController::class, 'pay']);
     });
 
-    // Clientes
-    Route::post('/customers', [CustomerController::class, 'store'])->middleware('ensure.usertype:admin,vendedor,vendedor_cobrador');
+    // ----------------- CLIENTES -----------------
+    // Mostrar cliente (usado na "Ficha do cliente")
+    Route::get('/customers/{customer}', [CustomerController::class, 'show'])
+        ->middleware('ensure.usertype:admin,vendedor,cobrador,vendedor_cobrador');
 
-    // Produtos (gestão de estoque)
-    Route::get('/products', [ProductController::class, 'index']);
-    Route::post('/products/{product}/photos', [ProductController::class, 'storePhotos']);
-    Route::delete('/products/{product}/photos', [ProductController::class, 'destroyPhotos']);
+    // Criar cliente
+    Route::post('/customers', [CustomerController::class, 'store'])
+        ->middleware('ensure.usertype:admin,vendedor,vendedor_cobrador');
+
+    // ----------------- PRODUTOS (ESTOQUE) -----------------
+    Route::middleware(['ensure.usertype:admin,vendedor,vendedor_cobrador'])->group(function () {
+        Route::get('/products', [ProductController::class, 'index']);
+        Route::post('/products/{product}/photos', [ProductController::class, 'storePhotos']);
+        Route::delete('/products/{product}/photos', [ProductController::class, 'destroyPhotos']);
+    });
 });
