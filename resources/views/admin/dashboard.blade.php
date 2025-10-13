@@ -7,7 +7,7 @@
       <div class="card-body">
         <h5 class="card-title pm-card-title position-relative">
           {{ __('global.products') }}
-          <span id="lowStockBadgeProducts" class="badge-alert position-absolute start-0 translate-middle-y" style="top:-.35rem; display:none;">
+          <span id="lowStockBadgeProducts" class="badge-alert position-absolute end-0 translate-middle-y" style="top:-.35rem; display:none;">
             <i class="bi bi-exclamation-square-fill"></i>
             {{ __('global.low_stock') }}
           </span>
