@@ -88,5 +88,23 @@ class UserSeeder extends Seeder
             'type'       => 'vendedor_cobrador',
             'store_mode' => 'ambos',
         ]);
+
+        User::create([
+            'name'       => 'Adalberto Roberto',
+            'email'      => 'adalberto@cobrador.com',
+            'password'   => Hash::make('cobrador123'),
+            'code'       => 'COB001',
+            'type'       => 'cobrador',
+            'store_mode' => 'externo',
+        ]);
+
+        User::create([
+            'name'       => 'Abraham Lincoln',
+            'email'      => 'abelincoln@cobrador.com',
+            'password'   => Hash::make('cobrador123'),
+            'code'       => 'COB002',
+            'type'       => 'cobrador',
+            'store_mode' => 'ambos',
+        ]);
     }
 }

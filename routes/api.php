@@ -34,5 +34,11 @@ Route::prefix('')->middleware(['auth:sanctum'])->group(function () {
         Route::post('/installments/{installment}/pay', [InstallmentController::class, 'pay']);
     });
 
+    // Clientes
     Route::post('/customers', [CustomerController::class, 'store'])->middleware('ensure.usertype:admin,vendedor,vendedor_cobrador');
+
+    // Produtos (gestão de estoque)
+    Route::get('/products', [ProductController::class, 'index']);
+    Route::post('/products/{product}/photos', [ProductController::class, 'storePhotos']);
+    Route::delete('/products/{product}/photos', [ProductController::class, 'destroyPhotos']);
 });
