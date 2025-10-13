@@ -32,21 +32,12 @@ class UserSeeder extends Seeder
             'store_mode' => 'loja',
         ]);
 
-        User::create([
-            'name'       => 'Mariana Caixa',
-            'email'      => 'mariana@loja.com',
-            'password'   => Hash::make('vendedor123'),
-            'code'       => 'VEN002',
-            'type'       => 'vendedor',
-            'store_mode' => 'loja',
-        ]);
-
         // Vendedor híbrido (atua em loja e externo)
         User::create([
             'name'       => 'Henrique Híbrido',
             'email'      => 'henrique@ambos.com',
             'password'   => Hash::make('vendedor123'),
-            'code'       => 'VEN003',
+            'code'       => 'VEN002',
             'type'       => 'vendedor',
             'store_mode' => 'ambos',
         ]);
@@ -56,16 +47,7 @@ class UserSeeder extends Seeder
             'name'       => 'João Externo',
             'email'      => 'joao@externo.com',
             'password'   => Hash::make('vendedor123'),
-            'code'       => 'VEN004',
-            'type'       => 'vendedor',
-            'store_mode' => 'externo',
-        ]);
-
-        User::create([
-            'name'       => 'Luciana Campos',
-            'email'      => 'luciana@externo.com',
-            'password'   => Hash::make('vendedor123'),
-            'code'       => 'VEN005',
+            'code'       => 'VEN003',
             'type'       => 'vendedor',
             'store_mode' => 'externo',
         ]);
@@ -75,7 +57,7 @@ class UserSeeder extends Seeder
             'name'       => 'Roberto Cobrador',
             'email'      => 'roberto@ambos.com',
             'password'   => Hash::make('vendedor123'),
-            'code'       => 'VEN006',
+            'code'       => 'VEN004',
             'type'       => 'vendedor_cobrador',
             'store_mode' => 'ambos',
         ]);
@@ -84,17 +66,8 @@ class UserSeeder extends Seeder
             'name'       => 'Fernanda Atendimento',
             'email'      => 'fernanda@ambos.com',
             'password'   => Hash::make('vendedor123'),
-            'code'       => 'VEN007',
+            'code'       => 'VEN005',
             'type'       => 'vendedor_cobrador',
-            'store_mode' => 'ambos',
-        ]);
-
-        User::create([
-            'name'       => 'Adalberto Roberto',
-            'email'      => 'adalberto@cobrador.com',
-            'password'   => Hash::make('cobrador123'),
-            'code'       => 'COB001',
-            'type'       => 'cobrador',
             'store_mode' => 'externo',
         ]);
 
@@ -102,9 +75,9 @@ class UserSeeder extends Seeder
             'name'       => 'Abraham Lincoln',
             'email'      => 'abelincoln@cobrador.com',
             'password'   => Hash::make('cobrador123'),
-            'code'       => 'COB002',
+            'code'       => 'COB001',
             'type'       => 'cobrador',
-            'store_mode' => 'ambos',
+            'store_mode' => 'externo',
         ]);
     }
 }
