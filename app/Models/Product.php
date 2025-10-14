@@ -12,13 +12,14 @@ class Product extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'name','model','color','size','price','notes','complements','photo_path',
+        'name','model','size','price','notes','complements','photo_path','stock_total',
     ];
 
     protected $casts = [
         'price'       => 'float',
         'complements' => 'array',
         'photo_path'  => 'array',
+        'stock_total' => 'integer',
     ];
 
     /* ----------------- MUTATOR: SEMPRE SALVA COMO ARRAY JSON ----------------- */

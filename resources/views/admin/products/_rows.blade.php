@@ -1,7 +1,7 @@
 @php use Illuminate\Support\Str; @endphp
 
 @forelse ($items as $p)
-<tr>
+<tr class="{{ $p->stock_total <= 0 ? 'row-low-stock' : '' }}">
   <td style="width:160px">
     @php
       $photos = $p->photo_path;
@@ -38,7 +38,7 @@
 
   <td>{{ $p->name }}</td>
   <td>{{ $p->model }}</td>
-  <td>{{ $p->color }}</td>
+  <td>{{ $p->stock_total }}</td>
   <td>{{ $p->size }}</td>
   <td class="text-end">{{ number_format((float)$p->price, 2, ',', '.') }}</td>
 
@@ -50,7 +50,7 @@
       data-id="{{ $p->id }}"
       data-name="{{ e((string)$p->name) }}"
       data-model="{{ e((string)$p->model) }}"
-      data-color="{{ e((string)$p->color) }}"
+      data-stock-total="{{ $p->stock_total }}"
       data-size="{{ e((string)$p->size) }}"
       data-price="{{ $p->price }}"
       data-notes="{{ e((string)$p->notes) }}"

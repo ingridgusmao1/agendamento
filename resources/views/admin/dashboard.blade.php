@@ -5,7 +5,13 @@
   <div class="col-md-6">
     <div class="card shadow-sm pm-card">
       <div class="card-body">
-        <h5 class="card-title pm-card-title">{{ __('global.products') }}</h5>
+        <h5 class="card-title pm-card-title position-relative">
+          {{ __('global.products') }}
+          <span id="lowStockBadgeProducts" class="badge-alert position-absolute end-0 translate-middle-y" style="top:-.35rem; display:none;">
+            <i class="bi bi-exclamation-square-fill"></i>
+            {{ __('global.low_stock') }}
+          </span>
+        </h5>
         <p class="text-muted">{{ __('global.products_caption') }}</p>
         <a href="{{ route('admin.products.index') }}" class="btn pm-btn pm-btn-primary">{{ __('global.open') }}</a>
       </div>
@@ -58,3 +64,32 @@
   </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+  (function() {
+    // roda somente na dashboard (este arquivo)
+    function checkLowStock() {
+      $.ajax({
+        url: '{{ route('admin.products.hasLowStock') }}',
+        method: 'GET',
+        cache: false,
+        success: function (res) {
+          if (res && res.low_stock === true) {
+            $('#lowStockBadgeProducts').fadeIn(120);
+          } else {
+            $('#lowStockBadgeProducts').fadeOut(120);
+          }
+        }
+      });
+    }
+
+    // dispara na carga
+    $(document).ready(function () {
+      checkLowStock();
+      // Revalida a cada minuto
+      setInterval(checkLowStock, 60000);
+    });
+  })();
+</script>
+@endpush
