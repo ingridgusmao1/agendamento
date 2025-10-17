@@ -163,7 +163,7 @@
 
   // abre modal de zoom de imagem (se você já tiver um; ajusta conforme seu projeto)
   function openImageModal(src, title = '') {
-    const m = document.getElementById('modalImageZoom');
+    const m = document.getElementById('modalImagePreview');
     if (!m) return;
     const img = m.querySelector('img');
     const cap = m.querySelector('[data-title]');
