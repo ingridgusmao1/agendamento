@@ -4,6 +4,11 @@
 
 @section('content')
 <div class="row justify-content-center mt-5">
+  <div class="col-md-6 text-center">
+    <img src="{{ asset('storage/logo/logo.jpg') }}" class="img-fluid mb-4" style="width:70%;" alt="Logo">
+  </div>
+</div>
+<div class="row justify-content-center mt-5">
   <div class="col-md-4">
     <div class="card shadow-sm pm-card">
       <div class="card-header pm-card-header">{{ __('global.admin_access') }}</div>
@@ -21,10 +26,6 @@
             <label class="form-label pm-label">{{ __('global.password') }}</label>
             <input type="password" name="password" class="form-control pm-input" required>
           </div>
-          <div class="form-check mb-3">
-            <input class="form-check-input pm-check" type="checkbox" name="remember" id="remember">
-            <label class="form-check-label pm-label" for="remember">{{ __('global.remember_me') }}</label>
-          </div>
           <button class="btn pm-btn pm-btn-primary w-100 d-flex justify-content-center">{{ __('global.enter') }}</button>
         </form>
       </div>
@@ -32,3 +33,4 @@
   </div>
 </div>
 @endsection
+

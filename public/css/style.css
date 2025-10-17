@@ -1,19 +1,24 @@
-/* ===== Paleta ===== */
 :root{
-  --pm-primary:        #455a64;
-  --pm-primary-dark:   #607d8b;
-  --pm-primary-light:  #cfd8dc;
-  --pm-white:          #FFFFFF;
-  --pm-black:          #212121;
+  /* NÚCLEO */
+  --pm-primary:        #E9001E;        /* vermelho exato do logo */
+  --pm-primary-dark:   #B10017;        /* versão escurecida para hovers/nav */
+  --pm-primary-accent: #FF4B5A;        /* destaque mais vivo */
+  --pm-primary-light:  #FCE8E9;        /* fundo avermelhado claro */
+
+  /* NEUTROS */
+  --pm-white:          #FAFAFA;
+  --pm-black:          #1F1F1F;
   --pm-gray-700:       #424242;
   --pm-gray-600:       #757575;
   --pm-gray-500:       #9E9E9E;
-  --pm-divider:        #BDBDBD;
+  --pm-gray-300:       #E3E3E3;
+  --pm-divider:        #E3E3E3;
 }
 
 /* ===== Reset suave para tipografia ===== */
 body{
   color: var(--pm-black);
+  background: var(--pm-white);
 }
 .pm-text-muted{ color: var(--pm-gray-600)!important; }
 .pm-text-primary{ color: var(--pm-primary)!important; }
@@ -44,10 +49,7 @@ body{
 .pm-btn:hover{ background: var(--_bg-hover); border-color: var(--_bd-hover); color: var(--_fg-hover); }
 .pm-btn:focus-visible{ outline: none; box-shadow: 0 0 0 .25rem color-mix(in srgb, var(--pm-primary) 25%, transparent); }
 
-/* variantes */
-.pm-btn-primary{ /* default (vermelho principal) */ }
-
-/* EDITAR em cinza-escuro (não vermelho) */
+/* EDITAR: cinza-escuro (para ações secundárias) */
 .pm-btn-dark{
   --_bg: var(--pm-gray-700);
   --_bd: var(--pm-gray-700);
@@ -129,7 +131,7 @@ body{
 .pm-card-footer{
   padding: .75rem 1rem;
   border-top: 1px solid var(--pm-divider);
-  background: #fafafa;
+  background: #fffefe;
 }
 
 /* ===== Badges ===== */
@@ -185,6 +187,7 @@ body{
   border-radius: .5rem;
   padding: .55rem .7rem;
   outline: none;
+  background: #fff;
 }
 .pm-input:focus, .pm-select:focus, .pm-textarea:focus{
   border-color: var(--pm-primary);
@@ -227,6 +230,7 @@ body{
 .pm-bg-primary{ background: var(--pm-primary)!important; color: var(--pm-white)!important; }
 .pm-bg-primary-dark{ background: var(--pm-primary-dark)!important; color: var(--pm-white)!important; }
 .pm-bg-primary-light{ background: var(--pm-primary-light)!important; color: var(--pm-black)!important; }
+.pm-bg-accent{ background: var(--pm-primary-accent)!important; color: var(--pm-white)!important; }
 
 /* ===== Títulos de seção ===== */
 .pm-section-title{
@@ -256,7 +260,7 @@ body{
 .pm-list-footer{
   display: flex; align-items: center; justify-content: space-between;
   padding: .75rem; border: 1px solid var(--pm-divider); border-top: 0;
-  border-radius: 0 0 .5rem .5rem; background: #fafafa;
+  border-radius: 0 0 .5rem .5rem; background: #fffefe;
 }
 
 /* ===== Tabelas “vazias” ===== */
@@ -281,48 +285,49 @@ select:invalid {
   font-style: italic;
 }
 
+/* ===== Thumbs de imagem ===== */
 .pm-thumbs { display:grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap:12px; }
 .pm-thumbs a { display:block; width:160px; height:160px; overflow:hidden; border-radius:8px; }
 .pm-thumbs img { width:100%; height:100%; object-fit:cover; display:block; }
 
-.text-sm-85 {
-  font-size: 85% !important;
-}
+/* ===== Utilitários ===== */
+.text-sm-85 { font-size: 85% !important; }
 
 .accordion-body { max-height: 320px; overflow: auto; padding-left: 1.25rem; }
 .accordion-body .form-check { padding: .25rem 0; margin-left: .25rem; }
 
+/* ===== Tabela de parcelas: destaques por data ===== */
 .table-installments tbody tr.table-warning-strong > * {
-  --bs-table-bg: #ffe066;         /* amarelo vivo (hoje) */
-  --bs-table-striped-bg: #ffe066;
-  --bs-table-hover-bg: #ffd24d;
+  --bs-table-bg: #ffe1e1;         /* hoje – vermelho claro */
+  --bs-table-striped-bg: #ffe1e1;
+  --bs-table-hover-bg: #ffd2d2;
 }
-
 .table-installments tbody tr.table-warning-light > * {
-  --bs-table-bg: #fffaf0;         /* amarelo ainda mais claro (≤5 dias) */
-  --bs-table-striped-bg: #fffaf0;
-  --bs-table-hover-bg: #fff2d6;
+  --bs-table-bg: #fff5f5;         /* ≤5 dias – ainda mais claro */
+  --bs-table-striped-bg: #fff5f5;
+  --bs-table-hover-bg: #ffecec;
 }
 
 /* Badge posicionado acima do título */
 .title-with-badge {
   position: relative;
   display: inline-block;
-  padding-top: 12px; /* cria espaço para o badge "acima" */
+  padding-top: 12px;
 }
 #lowStockBadge {
   position: absolute;
-  top: 0;              /* acima da palavra */
-  left: 0;             /* alinhado ao início da palavra */
-  display: none;       /* inicia oculto */
-  font-size: 0.95rem;  /* tamanho do ícone/texto */
+  top: 0;
+  left: 0;
+  display: none;
+  font-size: 0.95rem;
   line-height: 1;
 }
-/* Exemplo de “quadrinho vermelho” com ícone de exclamação */
+
+/* “Quadrinho” de alerta com ícone */
 .badge-alert {
-  background: #dc3545;           /* vermelho */
+  background: var(--pm-primary);
   color: #fff;
-  border-radius: .35rem;         /* cantos levemente arredondados */
+  border-radius: .35rem;
   padding: .15rem .4rem;
   box-shadow: 0 0 0 1px rgba(0,0,0,.08) inset;
   display: inline-flex;
@@ -330,30 +335,24 @@ select:invalid {
   gap: .25rem;
 }
 
-/* Linha com estoque <= 0: fundo rosa claro */
+/* Linha com estoque <= 0: fundo levemente rosado */
 .row-low-stock {
-  --low-stock-bg: #f1a4ae; /* rosa bem claro, quase branco avermelhado */
+  --low-stock-bg: #F4C7CD; /* vermelho rosado claro */
   background-color: var(--low-stock-bg) !important;
 }
-
-/* Garante que as células usem o mesmo fundo (Bootstrap às vezes pinta o <td>) */
 .row-low-stock > td,
 .row-low-stock > th,
 .table .row-low-stock > * {
   background-color: var(--low-stock-bg) !important;
 }
-
-/* (Opcional) uma leve separação sem empurrar colunas */
 .row-low-stock > td {
-  box-shadow: inset 0 1px rgba(255, 0, 72, 0.08), inset 0 -1px rgba(255, 0, 72, 0.08);
+  box-shadow: inset 0 1px rgba(203, 55, 55, 0.08), inset 0 -1px rgba(203, 55, 55, 0.08);
 }
-
-/* (Opcional) manter o hover discreto sem “apagar” o rosa */
 .table-hover tbody tr.row-low-stock:hover > * {
-  background-color: #ffe8ec !important; /* um tom 1 passo abaixo */
+  background-color: #FFE8EA !important;
 }
 
-/* deixa o “link” do cabeçalho mais discreto */
+/* Ordenação de colunas */
 .table .sortable {
   font-weight: 600;
   color: inherit;
