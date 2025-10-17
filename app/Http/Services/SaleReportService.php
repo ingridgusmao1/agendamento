@@ -120,11 +120,11 @@ class SaleReportService
         ];
 
         // --- Query base com os mesmos withs que o index ---
-        $q = \App\Models\Sale::query()->with(['customer','seller','items.product','payments']);
+        $q = Sale::query()->with(['customer','seller','items.product','payments']);
 
         if (!empty($f['user_name'])) {
-            $q->whereHas('seller', function (\Illuminate\Database\Eloquent\Builder $w) use ($f) {
-                $w->where(function (\Illuminate\Database\Eloquent\Builder $w2) use ($f) {
+            $q->whereHas('seller', function (Builder $w) use ($f) {
+                $w->where(function (Builder $w2) use ($f) {
                     foreach ($f['user_name'] as $name) {
                         $w2->orWhere('name', 'like', '%'.$name.'%');
                     }
