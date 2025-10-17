@@ -1,3 +1,9 @@
+<style>
+  body {
+    background-color: white !important;
+  }
+</style>
+
 @extends('layouts.admin')
 
 @section('title', __('global.login'))
