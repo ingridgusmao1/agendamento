@@ -1,58 +1,25 @@
-# public/.htaccess
-
 <IfModule mod_rewrite.c>
-    # Desativa MultiViews e listagem de diretório
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
     </IfModule>
 
     RewriteEngine On
 
-    # 1) Força HTTPS (SEM proxy). Evita loop: só redireciona se estiver em HTTP.
-    RewriteCond %{HTTPS} off
-    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-
-    # 2) Normaliza barra final (remove / no fim, exceto diretórios reais)
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteCond %{REQUEST_URI} .+/$
-    RewriteRule ^(.+?)/$ /$1 [L,R=301]
-
-    # 3) Preserva Authorization (Bearer) e X-XSRF-Token para o PHP
+    # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
-    RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
+    # Handle X-XSRF-Token Header
     RewriteCond %{HTTP:x-xsrf-token} .
-    RewriteRule ^ - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
+    RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
 
-    # 4) Front controller do Laravel
+    # Redirect Trailing Slashes If Not A Folder...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
-</IfModule>
-
-# 5) Bloqueia arquivos sensíveis
-<FilesMatch "^(\.env|composer\.(json|lock)|artisan|server\.php|phpunit\.xml|\.gitignore|\.gitattributes)$">
-    Require all denied
-</FilesMatch>
-
-# 6) Cabeçalhos mínimos de segurança (opcional; ative se já estiver tudo OK em HTTPS)
-<IfModule mod_headers.c>
-    # Descomente a linha abaixo quando tiver certeza que TODO o site funciona só em HTTPS.
-    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
-    Header set X-Content-Type-Options "nosniff"
-    Header set X-Frame-Options "SAMEORIGIN"
-    Header set Referrer-Policy "strict-origin-when-cross-origin"
-</IfModule>
-
-# 7) Cache básico para assets estáticos (opcional)
-<IfModule mod_expires.c>
-    ExpiresActive On
-    ExpiresByType image/webp "access plus 1 year"
-    ExpiresByType image/jpeg "access plus 1 year"
-    ExpiresByType image/png  "access plus 1 year"
-    ExpiresByType image/gif  "access plus 1 year"
-    ExpiresByType image/svg+xml "access plus 1 year"
-    ExpiresByType text/css   "access plus 1 month"
-    ExpiresByType application/javascript "access plus 1 month"
-    ExpiresByType font/woff2 "access plus 1 year"
 </IfModule>

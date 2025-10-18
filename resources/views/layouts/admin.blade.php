@@ -34,15 +34,18 @@
 
 <nav class="navbar navbar-dark bg-dark">
   <div class="container-xxl">
-    <a class="navbar-brand d-flex align-items-center" href="{{ route('admin.dashboard') }}">
-      <i class="bi bi-speedometer2 me-2"></i> Prestamista • Admin
-    </a>
+    @unless (request()->routeIs('login'))
+      <a class="navbar-brand d-flex align-items-center" href="{{ route('admin.dashboard') }}">
+        <i class="bi bi-table me-2"></i> Cred Lar
+      </a>
+    @endunless
+
     <div class="d-flex align-items-center">
       @auth
       <form action="{{ route('logout') }}" method="POST" class="ms-3">
         @csrf
         <button type="submit" class="btn btn-sm btn-outline-light">
-          <i class="bi bi-box-arrow-right me-1"></i>Sair
+          <i class="bi bi-box-arrow-right me-1"></i>{{ __('global.logout') }}
         </button>
       </form>
       @endauth
@@ -82,3 +85,4 @@
 @stack('scripts')
 </body>
 </html>
+

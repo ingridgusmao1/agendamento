@@ -114,11 +114,6 @@
             <textarea name="notes" class="form-control pm-input" rows="3"></textarea>
           </div>
           <div class="col-12">
-            <label class="form-label">{{ __('global.photo') }}</label>
-            <input name="photos[]" type="file" class="form-control pm-input" accept="image/*" multiple>
-            <small class="text-muted">{{ __('global.photo_caption') }}</small>
-          </div>
-          <div class="col-12">
             <label class="form-label">{{ __('global.complementary_info') }}</label>
             <textarea name="complements" class="form-control pm-input" rows="2"
               placeholder="{{ __('global.complements_hint') }}"></textarea>
@@ -166,11 +161,6 @@
           <div class="col-12">
             <label class="form-label">{{ __('global.notes') }}</label>
             <textarea name="notes" id="editNotes" class="form-control pm-input" rows="3"></textarea>
-          </div>
-          <div class="col-12">
-            <label class="form-label">{{ __('global.photo') }}</label>
-            <input name="photos[]" type="file" class="form-control pm-input" accept="image/*" multiple>
-            <small class="text-muted">{{ __('global.photo_caption') }}</small>
           </div>
           <div class="col-12">
             <label class="form-label">{{ __('global.complementary_info') }}</label>

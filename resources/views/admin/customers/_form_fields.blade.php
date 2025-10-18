@@ -42,11 +42,11 @@
     <label class="form-label">{{ __('global.rg') }}</label>
     <input type="text" name="rg" class="form-control">
   </div>
-  <div class="col-md-2">
+  <div class="col-md-2" data-block="coords">
     <label class="form-label">{{ __('global.lat') }}</label>
     <input type="number" step="any" name="lat" class="form-control">
   </div>
-  <div class="col-md-2">
+  <div class="col-md-2" data-block="coords">
     <label class="form-label">{{ __('global.lng') }}</label>
     <input type="number" step="any" name="lng" class="form-control">
   </div>
