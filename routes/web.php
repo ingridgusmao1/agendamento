@@ -82,5 +82,6 @@ Route::prefix('admin')->middleware(['auth','ensure.usertype:admin'])->name('admi
         ->name('sales.installments.payments.store');
 });
 
-// Fallback: manda sempre para login (evita loop com /admin)
-Route::fallback(fn () => redirect()->route('login'));
+Route::fallback(function () {
+    abort(404);
+});
