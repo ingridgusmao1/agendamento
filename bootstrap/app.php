@@ -4,7 +4,6 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\EnsureUserType;
-use Illuminate\Auth\Middleware\RedirectIfAuthenticated;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -17,7 +16,6 @@ return Application::configure(basePath: dirname(__DIR__))
         // Aliases de middleware (substitui o antigo Kernel::$routeMiddleware)
         $middleware->alias([
             'ensure.usertype' => EnsureUserType::class,
-            'guest'           => RedirectIfAuthenticated::class,
         ]);
 
         // Exemplos, se algum dia quiser mexer em grupos:

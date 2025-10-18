@@ -1,4 +1,9 @@
-{{-- resources/views/auth/login-code.blade.php --}}
+<style>
+  body {
+    background-color: white !important;
+  }
+</style>
+
 @extends('layouts.guest')
 
 @section('title', __('global.login'))
@@ -6,8 +11,7 @@
 @section('content')
 <div class="row justify-content-center mt-5">
   <div class="col-md-6 text-center">
-    {{-- coloque o logo em public/logo/logo.jpg --}}
-    <img src="{{ asset('logo/logo.jpg') }}" class="img-fluid mb-4" style="width:70%;" alt="Logo">
+    <img src="{{ asset('storage/logo/logo.jpg') }}" class="img-fluid mb-4" style="width:70%;" alt="Logo">
   </div>
 </div>
 <div class="row justify-content-center mt-5">
@@ -18,7 +22,6 @@
         @if($errors->any())
           <div class="alert alert-danger pm-alert">{{ $errors->first() }}</div>
         @endif
-
         <form method="POST" action="{{ route('login.post') }}">
           @csrf
           <div class="mb-3">
@@ -29,12 +32,11 @@
             <label class="form-label pm-label">{{ __('global.password') }}</label>
             <input type="password" name="password" class="form-control pm-input" required>
           </div>
-          <button class="btn pm-btn pm-btn-primary w-100 d-flex justify-content-center">
-            {{ __('global.enter') }}
-          </button>
+          <button class="btn pm-btn pm-btn-primary w-100 d-flex justify-content-center">{{ __('global.enter') }}</button>
         </form>
       </div>
     </div>
   </div>
 </div>
 @endsection
+
