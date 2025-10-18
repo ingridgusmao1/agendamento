@@ -1,19 +1,15 @@
-<style>
-  body {
-    background-color: white !important;
-  }
-</style>
-
-@extends('layouts.admin')
+@extends('layouts.guest')
 
 @section('title', __('global.login'))
 
 @section('content')
 <div class="row justify-content-center mt-5">
   <div class="col-md-6 text-center">
+    {{-- mantém logo via storage, como você pediu --}}
     <img src="{{ asset('storage/logo/logo.jpg') }}" class="img-fluid mb-4" style="width:70%;" alt="Logo">
   </div>
 </div>
+
 <div class="row justify-content-center mt-5">
   <div class="col-md-4">
     <div class="card shadow-sm pm-card">
