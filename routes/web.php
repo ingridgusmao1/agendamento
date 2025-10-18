@@ -8,10 +8,8 @@ use App\Http\Controllers\Admin\CustomerAdminController;
 use App\Http\Controllers\Admin\SaleAdminController;
 use App\Http\Controllers\Admin\InstallmentScheduleController;
 
-/**
- * O Laravel atende apenas em /alfagc (Alias do Apache).
- * /  e /politica-de-privacidade continuam fora do Laravel.
- */
+Route::get('/ping', fn() => 'pong');
+Route::get('/login-plain', fn() => 'login ok');
 
 // Home do app: manda p/ dashboard se logado, senão p/ login
 Route::get('/', function () {
