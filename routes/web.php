@@ -69,7 +69,7 @@ Route::prefix('admin')->middleware(['auth','ensure.usertype:admin'])->name('admi
     Route::get('/financial-reports',       [SaleAdminController::class, 'financialReports'])->name('financial-reports.index');
     Route::get('/admin/financial-reports/print', [SaleAdminController::class, 'financialReportsPdf'])->name('financial-reports.print');
 
-    // Cronograma de parcelas
+    // Crediário parcelado
     Route::get('/installments/schedule', [InstallmentScheduleController::class, 'index'])
         ->name('installments-schedule.index');
 

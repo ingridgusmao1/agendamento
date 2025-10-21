@@ -27,6 +27,7 @@
         <tr>
           <th style="width:120px"></th>
           <th>{{ __('global.customer_name') }}</th>
+          <th>{{ __('global.seller_name') }}</th>
           <th>{{ __('global.sale_number') }}</th>
           <th>{{ __('global.status') }}</th>
           <th class="text-end">{{ __('global.total') }}</th>
