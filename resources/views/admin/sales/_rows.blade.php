@@ -58,6 +58,8 @@
 
   <td>{{ $cust?->name ?? '-' }}</td>
 
+  <td>{{ $s->seller?->name ?? '-' }}</td>
+
   <td>{{ $s->number ?? '-' }}</td>
 
   <td>
