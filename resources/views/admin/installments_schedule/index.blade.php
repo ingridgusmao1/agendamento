@@ -5,11 +5,23 @@
 @php
     $origin = $filters['origin'] ?? 'all';
 
-    $c = $counts ?? ['overdue'=>0,'upto3'=>0,'upto5'=>0,'normal'=>0];
-    $s = $sums   ?? ['overdue'=>0,'upto3'=>0,'upto5'=>0,'normal'=>0];
+    // Inclui 'today'
+    $c = $counts ?? ['today'=>0,'overdue'=>0,'upto3'=>0,'upto5'=>0,'normal'=>0];
+    $s = $sums   ?? ['today'=>0,'overdue'=>0,'upto3'=>0,'upto5'=>0,'normal'=>0];
 
     function money_fmt($v) {
         return number_format((float)$v, 2, ',', '.');
+    }
+
+    // Mapeamento para classes Bootstrap válidas
+    function row_class(?string $h): string {
+        return match ($h) {
+            'overdue' => 'table-danger',
+            'today'   => 'table-warning',  // hoje
+            'soon3'   => 'table-warning',  // até 3 dias
+            'soon5'   => 'table-warning',  // até 5 dias
+            default   => '',
+        };
     }
 @endphp
 
@@ -36,31 +48,40 @@
 
       {{-- Contadores estáticos do conjunto filtrado atual --}}
       <div class="d-flex flex-wrap align-items-center gap-2" id="staticCountsBar" aria-label="@lang('global.counts_aria')">
+
+        {{-- NOVO: Vence hoje (laranja) --}}
+        <span class="badge" style="background-color:#FFA500; color:#111;">
+          @lang('global.due_today'):
+          <span class="ms-1 fw-semibold" id="cnt_today">
+            {{ $c['today'] ?? 0 }} (R$ {{ money_fmt($s['today'] ?? 0) }})
+          </span>
+        </span>
+
         <span class="badge text-bg-danger">
           @lang('global.total_overdue'):
           <span class="ms-1 fw-semibold" id="cnt_overdue">
-            {{ $c['overdue'] }} (R$ {{ money_fmt($s['overdue']) }})
+            {{ $c['overdue'] ?? 0 }} (R$ {{ money_fmt($s['overdue'] ?? 0) }})
           </span>
         </span>
 
         <span class="badge text-bg-warning">
           @lang('global.total_upto3'):
           <span class="ms-1 fw-semibold" id="cnt_upto3">
-            {{ $c['upto3'] }} (R$ {{ money_fmt($s['upto3']) }})
+            {{ $c['upto3'] ?? 0 }} (R$ {{ money_fmt($s['upto3'] ?? 0) }})
           </span>
         </span>
 
         <span class="badge text-bg-warning-subtle border text-dark">
           @lang('global.total_upto5'):
           <span class="ms-1 fw-semibold" id="cnt_upto5">
-            {{ $c['upto5'] }} (R$ {{ money_fmt($s['upto5']) }})
+            {{ $c['upto5'] ?? 0 }} (R$ {{ money_fmt($s['upto5'] ?? 0) }})
           </span>
         </span>
 
         <span class="badge text-bg-secondary">
           @lang('global.total_normal'):
           <span class="ms-1 fw-semibold" id="cnt_normal">
-            {{ $c['normal'] }} (R$ {{ money_fmt($s['normal']) }})
+            {{ $c['normal'] ?? 0 }} (R$ {{ money_fmt($s['normal'] ?? 0) }})
           </span>
         </span>
       </div>
@@ -82,14 +103,12 @@
       <tbody>
         @forelse($installments as $i)
           @php
-            $rowClass = match($i->highlight ?? '') {
-              'overdue' => 'table-danger',
-              'today'   => 'table-warning-strong',
-              'soon3'   => 'table-warning',
-              'soon5'   => 'table-warning-light',
-              default   => '',
-            };
-            $remaining = max(0, ($i->amount ?? 0) - ($i->paid_total ?? 0));
+            // Se você trouxe "remaining" do SQL, use $i->remaining. Caso contrário, calcule:
+            $remaining = isset($i->remaining)
+                ? (float)$i->remaining
+                : max(0, (float)($i->amount ?? 0) - (float)($i->paid_total ?? 0));
+
+            $rowClass = row_class($i->highlight ?? null);
           @endphp
           <tr class="{{ $rowClass }}">
             <td>{{ $i->sale->customer->name ?? '-' }}</td>
@@ -138,7 +157,7 @@
   const form = document.getElementById('filtersForm');
   if (!form) return;
 
-  // Troca de filtro -> reseta pagina e envia
+  // Troca de filtro -> reseta página e envia
   form.addEventListener('change', function(e) {
     if (e.target && e.target.name === 'origin') {
       Array.from(form.querySelectorAll('input[name="page"]')).forEach(n => n.remove());
