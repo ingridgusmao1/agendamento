@@ -6,6 +6,7 @@ use App\Models\Installment;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 class InstallmentScheduleService
 {
@@ -47,40 +48,57 @@ class InstallmentScheduleService
     /**
      * Mantido: lista paginada com highlight já calculado.
      */
-    public function getFilteredInstallments(array $filters, int $perPage = 50): LengthAwarePaginator
+    // App/Http/Services/InstallmentScheduleService.php
+    public function getFilteredInstallments(array $filters, int $perPage): LengthAwarePaginator
     {
         $today  = Carbon::today();
         $origin = $filters['origin'] ?? 'all';
+        $cat    = $filters['cat'] ?? null;
 
-        $query = Installment::query()
+        /** @var Builder $q */
+        $q = Installment::query()
+            // MUITO IMPORTANTE: garante sale_id e demais colunas do installment
+            ->select('installments.*')
+            // Eager loading só do que precisamos no modal + tabela
             ->with([
-                'sale:id,number,seller_id,gps_lat,gps_lng,customer_id',
-                'sale.seller:id,store_mode',
-                'sale.customer:id,name',
+                'sale:id,number,collection_note,gps_lat,gps_lng,customer_id',
+                'sale.customer:id,name,street,number,district,city,reference_point,phone',
+            ])
+            // Campos calculados usados pela view
+            ->addSelect([
+                DB::raw("
+                    CASE
+                        WHEN DATEDIFF(due_date, CURDATE()) < 0 THEN 'overdue'
+                        WHEN DATEDIFF(due_date, CURDATE()) = 0 THEN 'today'
+                        WHEN DATEDIFF(due_date, CURDATE()) BETWEEN 1 AND 3 THEN 'soon3'
+                        WHEN DATEDIFF(due_date, CURDATE()) BETWEEN 4 AND 5 THEN 'soon5'
+                        ELSE 'normal'
+                    END AS highlight
+                "),
+                DB::raw("GREATEST(COALESCE(amount,0) - COALESCE(paid_total,0), 0) AS remaining"),
             ]);
 
-        $this->applyOriginFilter($query, $origin);
+        // Filtro de origem via relações (NÃO use where('origin',...))
+        $this->applyOriginFilter($q, $origin);
 
-        $paginator = $query
-            ->orderBy('due_date', 'asc')
-            ->paginate($perPage)
-            ->withQueryString();
+        // Filtro de categoria (coerente com o CASE acima)
+        if ($cat === self::TODAY) {
+            $q->whereDate('due_date', $today);
+        } elseif ($cat === self::OVERDUE) {
+            $q->whereDate('due_date', '<', $today);
+        } elseif ($cat === self::SOON_3) {
+            $q->whereRaw('DATEDIFF(due_date, CURDATE()) BETWEEN 1 AND 3');
+        } elseif ($cat === self::SOON_5) {
+            $q->whereRaw('DATEDIFF(due_date, CURDATE()) BETWEEN 4 AND 5');
+        } elseif ($cat === self::NONE) {
+            $q->whereRaw('DATEDIFF(due_date, CURDATE()) > 5');
+        }
 
-        $paginator->getCollection()->transform(function ($i) use ($today) {
-            $due  = $i->due_date instanceof Carbon ? $i->due_date->copy()->startOfDay()
-                                                   : Carbon::parse($i->due_date)->startOfDay();
-            $diff = $today->diffInDays($due, false);
-
-            if     ($diff < 0)  { $i->highlight = self::OVERDUE; }
-            elseif ($diff === 0){ $i->highlight = self::TODAY; }
-            elseif ($diff <= 3) { $i->highlight = self::SOON_3; }
-            elseif ($diff <= 5) { $i->highlight = self::SOON_5; }
-            else                { $i->highlight = self::NONE; }
-
-            return $i;
-        });
-
-        return $paginator;
+        // Hoje primeiro
+        return $q->orderByRaw("CASE WHEN DATEDIFF(due_date, CURDATE()) = 0 THEN 0 ELSE 1 END ASC")
+                ->orderBy('due_date')
+                ->paginate($perPage)
+                ->withQueryString();
     }
 
     /**
@@ -134,37 +152,40 @@ class InstallmentScheduleService
     {
         $origin = $filters['origin'] ?? 'all';
 
-        // Base para aplicar filtro de origem
-        $base = Installment::query();
+        $base = Installment::query();                 // <— não selecione colunas aqui
+        $this->applyOriginFilter($base, $origin);     // mantém seu filtro de origem
 
-        // Precisamos do filtro antes da agregação
-        $this->applyOriginFilter($base, $origin);
-
-        // Agregação em SQL (MySQL/MariaDB)
-        // remaining = max(amount - paid_total, 0)
         $remainingExpr = 'GREATEST(COALESCE(amount,0) - COALESCE(paid_total,0), 0)';
         $diffExpr      = 'DATEDIFF(due_date, CURDATE())';
 
         $row = $base->selectRaw("
-            SUM(CASE WHEN {$diffExpr} < 0 THEN 1 ELSE 0 END)                                        AS c_overdue,
-            SUM(CASE WHEN {$diffExpr} BETWEEN 0 AND 3 THEN 1 ELSE 0 END)                             AS c_upto3,
-            SUM(CASE WHEN {$diffExpr} BETWEEN 4 AND 5 THEN 1 ELSE 0 END)                             AS c_upto5,
-            SUM(CASE WHEN {$diffExpr} > 5 THEN 1 ELSE 0 END)                                         AS c_normal,
+            SUM(CASE WHEN {$diffExpr} = 0 THEN 1 ELSE 0 END)                           AS c_today,
+            SUM(CASE WHEN {$diffExpr} = 0 THEN {$remainingExpr} ELSE 0 END)            AS s_today,
 
-            SUM(CASE WHEN {$diffExpr} < 0 THEN {$remainingExpr} ELSE 0 END)                          AS s_overdue,
-            SUM(CASE WHEN {$diffExpr} BETWEEN 0 AND 3 THEN {$remainingExpr} ELSE 0 END)              AS s_upto3,
-            SUM(CASE WHEN {$diffExpr} BETWEEN 4 AND 5 THEN {$remainingExpr} ELSE 0 END)              AS s_upto5,
-            SUM(CASE WHEN {$diffExpr} > 5 THEN {$remainingExpr} ELSE 0 END)                          AS s_normal
+            SUM(CASE WHEN {$diffExpr} < 0 THEN 1 ELSE 0 END)                           AS c_overdue,
+            SUM(CASE WHEN {$diffExpr} < 0 THEN {$remainingExpr} ELSE 0 END)            AS s_overdue,
+
+            SUM(CASE WHEN {$diffExpr} BETWEEN 1 AND 3 THEN 1 ELSE 0 END)               AS c_upto3,
+            SUM(CASE WHEN {$diffExpr} BETWEEN 1 AND 3 THEN {$remainingExpr} ELSE 0 END) AS s_upto3,
+
+            SUM(CASE WHEN {$diffExpr} BETWEEN 4 AND 5 THEN 1 ELSE 0 END)               AS c_upto5,
+            SUM(CASE WHEN {$diffExpr} BETWEEN 4 AND 5 THEN {$remainingExpr} ELSE 0 END) AS s_upto5,
+
+            SUM(CASE WHEN {$diffExpr} > 5 THEN 1 ELSE 0 END)                           AS c_normal,
+            SUM(CASE WHEN {$diffExpr} > 5 THEN {$remainingExpr} ELSE 0 END)            AS s_normal
         ")->first();
 
+        // Protege contra nulls quando não há linhas
         return [
             'counts' => [
+                'today'   => (int) ($row->c_today   ?? 0),
                 'overdue' => (int) ($row->c_overdue ?? 0),
                 'upto3'   => (int) ($row->c_upto3   ?? 0),
                 'upto5'   => (int) ($row->c_upto5   ?? 0),
                 'normal'  => (int) ($row->c_normal  ?? 0),
             ],
             'sums' => [
+                'today'   => (float) ($row->s_today   ?? 0),
                 'overdue' => (float) ($row->s_overdue ?? 0),
                 'upto3'   => (float) ($row->s_upto3   ?? 0),
                 'upto5'   => (float) ($row->s_upto5   ?? 0),
