@@ -112,7 +112,33 @@
           @endphp
           <tr class="{{ $rowClass }}">
             <td>{{ $i->sale->customer->name ?? '-' }}</td>
-            <td>{{ $i->sale->number ?? '-' }}</td>
+            <td>
+              @php
+                $sale = $i->sale;
+                $cust = $sale?->customer;
+                // Texto a exibir no link: número da venda, senão collection_note, senão '-'
+                $saleText = $sale?->number ?: ($sale?->collection_note ?: '-');
+              @endphp
+
+              <a href="#"
+                class="link-sale-modal"
+                data-bs-toggle="modal"
+                data-bs-target="#saleInfoModal"
+                data-sale-number="{{ e($sale?->number ?? '') }}"
+                data-collection-note="{{ e($sale?->collection_note ?? '') }}"
+                data-cust-name="{{ e($cust?->name ?? '') }}"
+                data-street="{{ e($cust?->street ?? '') }}"
+                data-number="{{ e($cust?->number ?? '') }}"
+                data-district="{{ e($cust?->district ?? '') }}"
+                data-city="{{ e($cust?->city ?? '') }}"
+                data-reference-point="{{ e($cust?->reference_point ?? '') }}"
+                data-phone="{{ e($cust?->phone ?? '') }}"
+                data-gps-lat="{{ $sale?->gps_lat !== null ? (string)$sale->gps_lat : '' }}"
+                data-gps-lng="{{ $sale?->gps_lng !== null ? (string)$sale->gps_lng : '' }}"
+              >
+                {{ $saleText }}
+              </a>
+            </td>
             <td>{{ number_format($remaining, 2, ',', '.') }}</td>
             <td>{{ optional($i->due_date)->format('d/m/Y') }}</td>
             <td>
@@ -134,6 +160,56 @@
     </table>
   </div>
 
+  {{-- Modal: Informações da venda/cliente --}}
+  <div class="modal fade" id="saleInfoModal" tabindex="-1" aria-labelledby="saleInfoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+
+        <div class="modal-header">
+          <h5 class="modal-title" id="saleInfoModalLabel">@lang('global.sale_details')</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="@lang('global.close')"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <h6 class="mb-2">@lang('global.customer_address')</h6>
+              <ul class="list-unstyled mb-0" id="custAddress">
+                <li><strong>@lang('global.customer'):</strong> <span id="m_cust_name">-</span></li>
+                <li><strong>@lang('global.street'):</strong> <span id="m_street">-</span></li>
+                <li><strong>@lang('global.number'):</strong> <span id="m_number">-</span></li>
+                <li><strong>@lang('global.district'):</strong> <span id="m_district">-</span></li>
+                <li><strong>@lang('global.city'):</strong> <span id="m_city">-</span></li>
+                <li><strong>@lang('global.reference_point'):</strong> <span id="m_reference_point">-</span></li>
+                <li><strong>@lang('global.phone'):</strong> <span id="m_phone">-</span></li>
+              </ul>
+            </div>
+
+            <div class="col-md-6">
+              <h6 class="mb-2">@lang('global.sale')</h6>
+              <ul class="list-unstyled mb-0">
+                <li><strong>@lang('global.sale_number'):</strong> <span id="m_sale_number">-</span></li>
+                <li><strong>@lang('global.collection_note'):</strong> <span id="m_collection_note">-</span></li>
+              </ul>
+
+              {{-- Bloco do Google Maps: renderiza só se houver lat/lng --}}
+              <div id="m_maps_block" class="mt-3" style="display:none;">
+                <a id="m_maps_link" href="#" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary">
+                  @lang('global.open_in_google_maps')
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">@lang('global.close')</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
   {{-- Paginação --}}
   <div class="mt-3" id="paginationWrap">
     @if ($installments->count())
@@ -153,37 +229,91 @@
 
 @push('scripts')
 <script>
-(function() {
+(() => {
+  // ---------------------------
+  // 1) Filtro por origem (form)
+  // ---------------------------
   const form = document.getElementById('filtersForm');
-  if (!form) return;
-
-  // Troca de filtro -> reseta página e envia
-  form.addEventListener('change', function(e) {
-    if (e.target && e.target.name === 'origin') {
-      Array.from(form.querySelectorAll('input[name="page"]')).forEach(n => n.remove());
-      const p = document.createElement('input');
-      p.type  = 'hidden';
-      p.name  = 'page';
-      p.value = '1';
-      form.appendChild(p);
-      form.submit();
-    }
-  });
-
-  // Mantém o filtro ativo na paginação
-  const originInputs = form.querySelectorAll('input[name="origin"]');
-  let originValue = 'all';
-  originInputs.forEach(i => { if (i.checked) originValue = i.value; });
-
-  document.querySelectorAll('#paginationWrap a.page-link').forEach(a => {
-    try {
-      const url = new URL(a.href);
-      if (!url.searchParams.has('origin')) {
-        url.searchParams.set('origin', originValue);
-        a.href = url.toString();
+  if (form) {
+    form.addEventListener('change', (e) => {
+      if (e.target && e.target.name === 'origin') {
+        // Reset de página ao trocar origem
+        form.querySelectorAll('input[name="page"]').forEach(n => n.remove());
+        const p = document.createElement('input');
+        p.type  = 'hidden';
+        p.name  = 'page';
+        p.value = '1';
+        form.appendChild(p);
+        form.submit();
       }
-    } catch (_) {}
-  });
+    });
+
+    // ---------------------------
+    // 2) Preserva origem na paginação
+    // ---------------------------
+    let originValue = 'all';
+    form.querySelectorAll('input[name="origin"]').forEach(i => { if (i.checked) originValue = i.value; });
+
+    document.querySelectorAll('#paginationWrap a.page-link').forEach(a => {
+      try {
+        const url = new URL(a.href);
+        if (!url.searchParams.has('origin')) {
+          url.searchParams.set('origin', originValue);
+          a.href = url.toString();
+        }
+      } catch (_) { /* ignora urls inválidas */ }
+    });
+  }
+
+  // ---------------------------
+  // 3) Modal de detalhes da venda/cliente
+  // ---------------------------
+  const modal = document.getElementById('saleInfoModal');
+  if (modal) {
+    modal.addEventListener('show.bs.modal', (event) => {
+      const trigger = event.relatedTarget;
+      if (!trigger) return;
+
+      const d = trigger.dataset;
+      const $ = (sel) => modal.querySelector(sel);
+
+      // Text helpers (evita "undefined" na UI)
+      const txt = (v, fallback='-') => (v && String(v).trim() !== '' ? String(v) : fallback);
+
+      // Preenche venda
+      $('#m_sale_number').textContent     = txt(d.saleNumber);
+      $('#m_collection_note').textContent = txt(d.collectionNote);
+
+      // Preenche cliente/endereço
+      $('#m_cust_name').textContent       = txt(d.custName);
+      $('#m_street').textContent          = txt(d.street);
+      $('#m_number').textContent          = txt(d.number);
+      $('#m_district').textContent        = txt(d.district);
+      $('#m_city').textContent            = txt(d.city);
+      $('#m_reference_point').textContent = txt(d.referencePoint);
+      $('#m_phone').textContent           = txt(d.phone);
+
+      // Google Maps (apenas se houver lat/lng válidos)
+      const lat = (d.gpsLat || '').trim();
+      const lng = (d.gpsLng || '').trim();
+      const mapsBlock = $('#m_maps_block');
+      const mapsLink  = $('#m_maps_link');
+
+      const hasCoords = lat !== '' && lng !== '' && !Number.isNaN(Number(lat)) && !Number.isNaN(Number(lng));
+      if (hasCoords) {
+        const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lat)},${encodeURIComponent(lng)}`;
+        mapsLink.setAttribute('href', url);
+        mapsBlock.style.display = '';
+      } else {
+        mapsLink.removeAttribute('href');
+        mapsBlock.style.display = 'none';
+      }
+
+      // Título dinâmico (opcional)
+      const title = $('#saleInfoModalLabel');
+      if (title) title.textContent = `@lang('global.sale_details') — ${txt(d.saleNumber)}`;
+    });
+  }
 })();
 </script>
 @endpush

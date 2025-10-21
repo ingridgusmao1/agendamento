@@ -48,6 +48,7 @@ class InstallmentScheduleService
     /**
      * Mantido: lista paginada com highlight já calculado.
      */
+    // App/Http/Services/InstallmentScheduleService.php
     public function getFilteredInstallments(array $filters, int $perPage): LengthAwarePaginator
     {
         $today  = Carbon::today();
@@ -56,10 +57,15 @@ class InstallmentScheduleService
 
         /** @var Builder $q */
         $q = Installment::query()
-            ->with(['sale.customer'])
-            // Computa a faixa como coluna 'highlight' para a view colorir
+            // MUITO IMPORTANTE: garante sale_id e demais colunas do installment
+            ->select('installments.*')
+            // Eager loading só do que precisamos no modal + tabela
+            ->with([
+                'sale:id,number,collection_note,gps_lat,gps_lng,customer_id',
+                'sale.customer:id,name,street,number,district,city,reference_point,phone',
+            ])
+            // Campos calculados usados pela view
             ->addSelect([
-                '*',
                 DB::raw("
                     CASE
                         WHEN DATEDIFF(due_date, CURDATE()) < 0 THEN 'overdue'
@@ -69,15 +75,13 @@ class InstallmentScheduleService
                         ELSE 'normal'
                     END AS highlight
                 "),
-                // opcional: remaining já calculado em SQL, se quiser usar
                 DB::raw("GREATEST(COALESCE(amount,0) - COALESCE(paid_total,0), 0) AS remaining"),
             ]);
 
-        // >>> NÃO use where('origin', ...): essa coluna não existe.
-        // Use a sua regra relacional:
+        // Filtro de origem via relações (NÃO use where('origin',...))
         $this->applyOriginFilter($q, $origin);
 
-        // Filtro por categoria (coerente com o CASE acima)
+        // Filtro de categoria (coerente com o CASE acima)
         if ($cat === self::TODAY) {
             $q->whereDate('due_date', $today);
         } elseif ($cat === self::OVERDUE) {
@@ -90,13 +94,11 @@ class InstallmentScheduleService
             $q->whereRaw('DATEDIFF(due_date, CURDATE()) > 5');
         }
 
-        return $q
-            // 1º: empurra 'today' para o topo
-            ->orderByRaw("CASE WHEN DATEDIFF(due_date, CURDATE()) = 0 THEN 0 ELSE 1 END ASC")
-            // 2º: depois ordena por data normalmente
-            ->orderBy('due_date')
-            ->paginate($perPage)
-            ->withQueryString();
+        // Hoje primeiro
+        return $q->orderByRaw("CASE WHEN DATEDIFF(due_date, CURDATE()) = 0 THEN 0 ELSE 1 END ASC")
+                ->orderBy('due_date')
+                ->paginate($perPage)
+                ->withQueryString();
     }
 
     /**

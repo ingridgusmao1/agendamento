@@ -257,4 +257,7 @@ return [
     'low_stock' => 'Baixo estoque',
     'stock_total' => 'Estoque total',
     'inventory' => 'Estoque',
+    'customer_address' => 'Endereço do cliente',
+    'collection_note' => 'Observação de cobrança',
+    'open_in_google_maps' => 'Abrir no Google Maps',
 ];
